@@ -12,8 +12,8 @@ import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth - 40;
-const CARD_HEIGHT = screenHeight * 0.6;
+const CARD_WIDTH = screenWidth * 0.75; // 75% of screen width
+const CARD_HEIGHT = screenHeight * 0.5; // 50% of screen height
 
 const TasksScreen: React.FC = () => {
   const { currentPet, pets } = useAppStore();
@@ -192,22 +192,18 @@ const TasksScreen: React.FC = () => {
               <Text style={styles.numericValue}>{currentValue}</Text>
             </View>
             <View style={styles.numericButtons}>
-              <View style={styles.buttonShadow}>
-                <TouchableOpacity 
-                  style={styles.numericButton}
-                  onPress={() => updateTaskValue(task.id, Math.max(0, currentValue - 10))}
-                >
-                  <Text style={styles.numericButtonText}>-</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.buttonShadow}>
-                <TouchableOpacity 
-                  style={styles.numericButton}
-                  onPress={() => updateTaskValue(task.id, currentValue + 10)}
-                >
-                  <Text style={styles.numericButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity 
+                style={[styles.numericButton, styles.buttonShadow]}
+                onPress={() => updateTaskValue(task.id, Math.max(0, currentValue - 10))}
+              >
+                <Text style={styles.numericButtonText}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.numericButton, styles.buttonShadow]}
+                onPress={() => updateTaskValue(task.id, currentValue + 10)}
+              >
+                <Text style={styles.numericButtonText}>+</Text>
+              </TouchableOpacity>
             </View>
           </View>
         );
@@ -241,32 +237,28 @@ const TasksScreen: React.FC = () => {
       case 'yesno':
         return (
           <View style={styles.yesNoInput}>
-            <View style={[styles.buttonShadow, !currentValue && styles.buttonSelected]}>
-              <TouchableOpacity 
-                style={styles.noButton}
-                onPress={() => updateTaskValue(task.id, false)}
-              >
-                <Text style={[
-                  styles.noButtonText,
-                  !currentValue && styles.buttonTextSelected
-                ]}>
-                  No
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={[styles.buttonShadow, currentValue && styles.buttonSelected]}>
-              <TouchableOpacity 
-                style={styles.yesButton}
-                onPress={() => updateTaskValue(task.id, true)}
-              >
-                <Text style={[
-                  styles.yesButtonText,
-                  currentValue && styles.buttonTextSelected
-                ]}>
-                  Yes
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              style={[styles.noButton, styles.buttonShadow, !currentValue && styles.buttonSelected]}
+              onPress={() => updateTaskValue(task.id, false)}
+            >
+              <Text style={[
+                styles.noButtonText,
+                !currentValue && styles.buttonTextSelected
+              ]}>
+                No
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.yesButton, styles.buttonShadow, currentValue && styles.buttonSelected]}
+              onPress={() => updateTaskValue(task.id, true)}
+            >
+              <Text style={[
+                styles.yesButtonText,
+                currentValue && styles.buttonTextSelected
+              ]}>
+                Yes
+              </Text>
+            </TouchableOpacity>
           </View>
         );
       
@@ -659,11 +651,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 3,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   buttonSelected: {
     transform: [{ scale: 1.1 }],
