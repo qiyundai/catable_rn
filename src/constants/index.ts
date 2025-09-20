@@ -10,7 +10,7 @@ export const APP_CONFIG = {
 };
 
 export const COLORS = {
-  primary: '#FF6B6B',
+  primary: '#18C07A',
   secondary: '#4ECDC4',
   accent: '#45B7D1',
   background: '#F8F9FA',
@@ -18,10 +18,11 @@ export const COLORS = {
   text: '#2C3E50',
   textSecondary: '#7F8C8D',
   border: '#E1E8ED',
-  success: '#27AE60',
+  success: '#18C07A',
   warning: '#F39C12',
   error: '#E74C3C',
   disabled: '#BDC3C7',
+  progress: '#FF9633',
 };
 
 export const SPACING = {

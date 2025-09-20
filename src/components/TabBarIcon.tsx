@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface TabBarIconProps {
@@ -37,11 +37,11 @@ const TabBarIcon: React.FC<TabBarIconProps> = ({ route, focused, color, size }) 
   };
 
   if (route === 'Community') {
-    // Special center button with custom styling
+    // Special center button with custom styling - always green
     return (
       <View style={[
         styles.centerButton,
-        { backgroundColor: focused ? '#FF6B6B' : '#4ECDC4' }
+        { backgroundColor: '#18C07A' }
       ]}>
         <Ionicons
           name={focused ? getIconNameFilled() : getIconName()}
@@ -53,31 +53,22 @@ const TabBarIcon: React.FC<TabBarIconProps> = ({ route, focused, color, size }) 
   }
 
   return (
-    <View style={styles.iconContainer}>
-      <Ionicons
-        name={focused ? getIconNameFilled() : getIconName()}
-        size={size}
-        color={color}
-      />
-      <Text style={[styles.label, { color }]}>
-        {route === 'PetProfiles' ? 'Pets' : route}
-      </Text>
-    </View>
+    <Ionicons
+      name={focused ? getIconNameFilled() : getIconName()}
+      size={size}
+      color={color}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   centerButton: {
     width: 60,
     height: 60,
     borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 35,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -86,11 +77,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  label: {
-    fontSize: 10,
-    marginTop: 2,
-    fontWeight: '500',
   },
 });
 

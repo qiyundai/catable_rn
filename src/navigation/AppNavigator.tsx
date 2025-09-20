@@ -2,6 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppStore } from '../store';
 import { RootStackParamList, MainTabParamList } from '../types';
 
@@ -23,22 +24,34 @@ const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabNavigator = () => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => (
           <TabBarIcon route={route.name} focused={focused} color={color} size={size} />
         ),
-        tabBarActiveTintColor: '#FF6B6B',
-        tabBarInactiveTintColor: '#7F8C8D',
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: '#18C07A',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopWidth: 1,
           borderTopColor: '#E1E8ED',
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 60,
+          height: 80 + Math.max(insets.bottom - 8, 0),
         },
+        tabBarItemStyle: {
+          backgroundColor: 'transparent',
+          borderRadius: 20,
+          marginHorizontal: 8,
+          marginVertical: 4,
+        },
+        tabBarActiveBackgroundColor: '#18C07A',
+        tabBarInactiveBackgroundColor: '#FFFFFF',
+        tabBarInactiveBorderColor: '#18C07A',
+        tabBarInactiveBorderWidth: 1,
         headerStyle: {
           backgroundColor: '#FFFFFF',
           borderBottomWidth: 1,
