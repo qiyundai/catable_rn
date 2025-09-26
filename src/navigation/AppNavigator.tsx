@@ -28,8 +28,8 @@ const MainTabNavigator = () => {
   
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => (
+      screenOptions={({ route }: { route: any }) => ({
+        tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
           <TabBarIcon route={route.name} focused={focused} color={color} size={size} />
         ),
         tabBarActiveTintColor: '#FFFFFF',
