@@ -30,33 +30,61 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
   };
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View style={styles.tabBarContent}>
-        {/* Tasks Tab */}
-        <TouchableOpacity
-          style={[
-            styles.tabButton,
-            activeScreen === 'Tasks' && styles.activeTabButton
-          ]}
-          onPress={() => {
-            setActiveScreen('Tasks');
-            navigation.navigate('Tasks');
-          }}
-        >
-          <Ionicons
-            name={activeScreen === 'Tasks' ? 'list' : 'list-outline'}
-            size={24}
-            color={activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A'}
-          />
-          <Text style={[
-            styles.tabLabel,
-            { color: activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A' }
-          ]}>
-            Tasks
-          </Text>
-        </TouchableOpacity>
+    <View style={styles.tabBarContainer}>
+      <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <View style={styles.tabBarContent}>
+          {/* Tasks Tab */}
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              activeScreen === 'Tasks' && styles.activeTabButton
+            ]}
+            onPress={() => {
+              setActiveScreen('Tasks');
+              navigation.navigate('Tasks');
+            }}
+          >
+            <Ionicons
+              name={activeScreen === 'Tasks' ? 'list' : 'list-outline'}
+              size={24}
+              color={activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A'}
+            />
+            <Text style={[
+              styles.tabLabel,
+              { color: activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A' }
+            ]}>
+              Tasks
+            </Text>
+          </TouchableOpacity>
 
-        {/* Floating Community Button */}
+          {/* Pets Tab */}
+          <TouchableOpacity
+            style={[
+              styles.tabButton,
+              activeScreen === 'PetProfiles' && styles.activeTabButton
+            ]}
+            onPress={() => {
+              setActiveScreen('PetProfiles');
+              navigation.navigate('PetProfiles');
+            }}
+          >
+            <Ionicons
+              name={activeScreen === 'PetProfiles' ? 'paw' : 'paw-outline'}
+              size={24}
+              color={activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A'}
+            />
+            <Text style={[
+              styles.tabLabel,
+              { color: activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A' }
+            ]}>
+              Pets
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Floating Community Button - Hide when on Community screen */}
+      {activeScreen !== 'Community' && (
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={navigateToCommunity}
@@ -67,31 +95,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
             color="#FFFFFF"
           />
         </TouchableOpacity>
-
-        {/* Pets Tab */}
-        <TouchableOpacity
-          style={[
-            styles.tabButton,
-            activeScreen === 'PetProfiles' && styles.activeTabButton
-          ]}
-          onPress={() => {
-            setActiveScreen('PetProfiles');
-            navigation.navigate('PetProfiles');
-          }}
-        >
-          <Ionicons
-            name={activeScreen === 'PetProfiles' ? 'paw' : 'paw-outline'}
-            size={24}
-            color={activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A'}
-          />
-          <Text style={[
-            styles.tabLabel,
-            { color: activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A' }
-          ]}>
-            Pets
-          </Text>
-        </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
 };
@@ -124,12 +128,11 @@ const MainTabNavigator = () => {
         screenOptions={{
           headerStyle: {
             backgroundColor: '#FFFFFF',
-            borderBottomWidth: 1,
-            borderBottomColor: '#E1E8ED',
           },
           headerTitleStyle: {
-            fontSize: 18,
+            fontSize: 35,
             fontWeight: '600',
+            fontFamily: 'LobsterTwo_400Regular',
             color: '#2C3E50',
           },
         }}
@@ -163,11 +166,10 @@ const AppNavigator = () => {
         screenOptions={{
           headerStyle: {
             backgroundColor: '#FFFFFF',
-            borderBottomWidth: 1,
-            borderBottomColor: '#E1E8ED',
           },
           headerTitleStyle: {
             fontSize: 18,
+            fontFamily: 'LobsterTwo_700Bold',
             fontWeight: '600',
             color: '#2C3E50',
           },
@@ -221,6 +223,9 @@ const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'relative',
+  },
   tabBar: {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
@@ -230,20 +235,14 @@ const styles = StyleSheet.create({
   tabBarContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
     flex: 1,
-    paddingHorizontal: 20,
   },
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    borderRadius: 20,
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#18C07A',
-    marginHorizontal: 10,
   },
   activeTabButton: {
     backgroundColor: '#18C07A',
@@ -254,6 +253,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   floatingButton: {
+    position: 'absolute',
+    top: -30,
+    left: '50%',
+    marginLeft: -30,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -268,7 +271,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
-    marginHorizontal: 10,
   },
 });
 

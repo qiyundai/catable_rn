@@ -39,31 +39,62 @@ export const TYPOGRAPHY = {
     fontSize: 32,
     fontWeight: 'bold' as const,
     lineHeight: 40,
+    fontFamily: 'LobsterTwo',
   },
   h2: {
     fontSize: 24,
     fontWeight: 'bold' as const,
     lineHeight: 32,
+    fontFamily: 'LobsterTwo',
   },
   h3: {
     fontSize: 20,
     fontWeight: '600' as const,
     lineHeight: 28,
+    fontFamily: 'LobsterTwo',
   },
   body: {
     fontSize: 16,
     fontWeight: 'normal' as const,
     lineHeight: 24,
+    fontFamily: 'Roboto',
   },
   caption: {
     fontSize: 14,
     fontWeight: 'normal' as const,
     lineHeight: 20,
+    fontFamily: 'Roboto',
   },
   small: {
     fontSize: 12,
     fontWeight: 'normal' as const,
     lineHeight: 16,
+    fontFamily: 'Roboto',
+  },
+  // Additional Roboto weights
+  bodyMedium: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    lineHeight: 24,
+    fontFamily: 'Roboto',
+  },
+  bodyBold: {
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+    lineHeight: 24,
+    fontFamily: 'Roboto',
+  },
+  captionMedium: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    lineHeight: 20,
+    fontFamily: 'Roboto',
+  },
+  captionBold: {
+    fontSize: 14,
+    fontWeight: 'bold' as const,
+    lineHeight: 20,
+    fontFamily: 'Roboto',
   },
 };
 
