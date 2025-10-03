@@ -13,7 +13,7 @@ export const COLORS = {
   primary: '#18C07A',
   secondary: '#4ECDC4',
   accent: '#45B7D1',
-  background: '#F8F9FA',
+  background: '#FFFFFF',
   surface: '#FFFFFF',
   text: '#2C3E50',
   textSecondary: '#7F8C8D',

@@ -1,10 +1,100 @@
-import React from 'react';
+import React, { useState, createContext, useContext, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
 import { RootStackParamList, MainTabParamList } from '../types';
+
+// Create context for active screen
+const ActiveScreenContext = createContext<{
+  activeScreen: string;
+  setActiveScreen: (screen: string) => void;
+}>({
+  activeScreen: 'Tasks',
+  setActiveScreen: () => {},
+});
+
+export const useActiveScreen = () => useContext(ActiveScreenContext);
+
+// Custom Tab Bar Component
+const CustomTabBar = ({ state, descriptors, navigation }: any) => {
+  const insets = useSafeAreaInsets();
+  const { activeScreen, setActiveScreen } = useActiveScreen();
+
+  const navigateToCommunity = () => {
+    setActiveScreen('Community');
+    navigation.navigate('Community');
+  };
+
+  return (
+    <View style={[styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <View style={styles.tabBarContent}>
+        {/* Tasks Tab */}
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeScreen === 'Tasks' && styles.activeTabButton
+          ]}
+          onPress={() => {
+            setActiveScreen('Tasks');
+            navigation.navigate('Tasks');
+          }}
+        >
+          <Ionicons
+            name={activeScreen === 'Tasks' ? 'list' : 'list-outline'}
+            size={24}
+            color={activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A'}
+          />
+          <Text style={[
+            styles.tabLabel,
+            { color: activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A' }
+          ]}>
+            Tasks
+          </Text>
+        </TouchableOpacity>
+
+        {/* Floating Community Button */}
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={navigateToCommunity}
+        >
+          <Ionicons
+            name="paper-plane"
+            size={24}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+
+        {/* Pets Tab */}
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeScreen === 'PetProfiles' && styles.activeTabButton
+          ]}
+          onPress={() => {
+            setActiveScreen('PetProfiles');
+            navigation.navigate('PetProfiles');
+          }}
+        >
+          <Ionicons
+            name={activeScreen === 'PetProfiles' ? 'paw' : 'paw-outline'}
+            size={24}
+            color={activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A'}
+          />
+          <Text style={[
+            styles.tabLabel,
+            { color: activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A' }
+          ]}>
+            Pets
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 // Import screens
 import AuthScreen from '../screens/AuthScreen';
@@ -24,62 +114,43 @@ const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabNavigator = () => {
-  const insets = useSafeAreaInsets();
+  const [activeScreen, setActiveScreen] = useState('Tasks');
   
   return (
-    <Tab.Navigator
-      screenOptions={({ route }: { route: any }) => ({
-        tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-          <TabBarIcon route={route.name} focused={focused} color={color} size={size} />
-        ),
-        tabBarActiveTintColor: '#FFFFFF',
-        tabBarInactiveTintColor: '#18C07A',
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E1E8ED',
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 8,
-          height: 80 + Math.max(insets.bottom - 8, 0),
-        },
-        tabBarItemStyle: {
-          backgroundColor: 'transparent',
-          borderRadius: 20,
-          marginHorizontal: 8,
-          marginVertical: 4,
-        },
-        tabBarActiveBackgroundColor: '#18C07A',
-        tabBarInactiveBackgroundColor: '#FFFFFF',
-        tabBarInactiveBorderColor: '#18C07A',
-        tabBarInactiveBorderWidth: 1,
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-          borderBottomWidth: 1,
-          borderBottomColor: '#E1E8ED',
-        },
-        headerTitleStyle: {
-          fontSize: 18,
-          fontWeight: '600',
-          color: '#2C3E50',
-        },
-      })}
-    >
-      <Tab.Screen 
-        name="Tasks" 
-        component={TasksScreen}
-        options={{ title: 'Tasks' }}
-      />
-      <Tab.Screen 
-        name="Community" 
-        component={CommunityScreen}
-        options={{ title: 'Community' }}
-      />
-      <Tab.Screen 
-        name="PetProfiles" 
-        component={PetProfilesScreen}
-        options={{ title: 'Pets' }}
-      />
-    </Tab.Navigator>
+    <ActiveScreenContext.Provider value={{ activeScreen, setActiveScreen }}>
+      <Tab.Navigator
+        initialRouteName="Tasks"
+        tabBar={(props) => <CustomTabBar {...props} />}
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+            borderBottomWidth: 1,
+            borderBottomColor: '#E1E8ED',
+          },
+          headerTitleStyle: {
+            fontSize: 18,
+            fontWeight: '600',
+            color: '#2C3E50',
+          },
+        }}
+      >
+        <Tab.Screen 
+          name="Tasks" 
+          component={TasksScreen}
+          options={{ title: 'Tasks' }}
+        />
+        <Tab.Screen 
+          name="PetProfiles" 
+          component={PetProfilesScreen}
+          options={{ title: 'Pets' }}
+        />
+        <Tab.Screen 
+          name="Community" 
+          component={CommunityScreen}
+          options={{ title: 'Community' }}
+        />
+      </Tab.Navigator>
+    </ActiveScreenContext.Provider>
   );
 };
 
@@ -148,5 +219,57 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  tabBar: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E1E8ED',
+    height: 80,
+  },
+  tabBarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#18C07A',
+    marginHorizontal: 10,
+  },
+  activeTabButton: {
+    backgroundColor: '#18C07A',
+  },
+  tabLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  floatingButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#18C07A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    marginHorizontal: 10,
+  },
+});
 
 export default AppNavigator;
