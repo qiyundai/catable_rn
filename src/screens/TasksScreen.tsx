@@ -412,7 +412,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     backgroundColor: COLORS.surface,
-    zIndex: 10, // Ensure header is above cards
   },
   streakContainer: {
     alignItems: 'center',
@@ -475,7 +474,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.lg,
     borderRadius: 20,
-    zIndex: 10,
+    zIndex: 11,
   },
   leftIndicator: {
     left: 20,
