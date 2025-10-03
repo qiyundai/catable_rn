@@ -124,15 +124,6 @@ const CommunityScreen: React.FC = () => {
         
         {/* Island Info Overlay */}
         <View style={styles.islandInfoOverlay}>
-          <View style={styles.catsContainer}>
-            {island.cats.map((cat: any, index: number) => (
-              <View key={index} style={styles.catAvatar}>
-                <Text style={styles.catEmoji}>{cat.avatar || '🐱'}</Text>
-                <Text style={styles.catName}>{cat.name}</Text>
-              </View>
-            ))}
-          </View>
-
           {/* Latest message for this island */}
           {island.messages.length > 0 && (
             <View style={styles.messageBubbles}>
@@ -296,25 +287,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: SPACING.lg,
     justifyContent: 'space-between',
-  },
-  catsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  catAvatar: {
-    alignItems: 'center',
-    margin: SPACING.sm,
-  },
-  catEmoji: {
-    fontSize: 32,
-    marginBottom: SPACING.xs,
-  },
-  catName: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text,
-    textAlign: 'center',
   },
   messageBubbles: {
     position: 'absolute',
