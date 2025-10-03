@@ -146,10 +146,15 @@ const CommunityScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.mainContent}>
-          {/* Island Navigation */}
+          {/* 2. Current Island */}
+          <View style={styles.islandsContainer}>
+            {renderFloatingIsland(islands[currentIsland])}
+          </View>
+
+          {/* 3. Island Navigation */}
           <View style={styles.navigationContainer}>
             <TouchableOpacity 
               style={styles.navButton}
@@ -183,45 +188,40 @@ const CommunityScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Current Island */}
-          <View style={[styles.islandsContainer, { marginBottom: keyboardHeight }]}>
-            {renderFloatingIsland(islands[currentIsland])}
-          </View>
+          {/* 4. Pill Input Bar - Only show for "My Island" */}
+          {currentIsland === 0 && (
+            <View style={[styles.pillInputContainer, { marginBottom: keyboardHeight }]}>
+              <View style={styles.pillInput}>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Share something about your cat..."
+                  value={message}
+                  onChangeText={setMessage}
+                  multiline
+                  maxLength={200}
+                />
+                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.sendButton, 
+                      !message.trim() && styles.disabledSendButton
+                    ]}
+                    onPress={handleSendMessage}
+                    disabled={!message.trim()}
+                  >
+                    <Ionicons
+                      name="paper-plane"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                  </TouchableOpacity>
+                </Animated.View>
+              </View>
+            </View>
+          )}
         </View>
       </TouchableWithoutFeedback>
-
-      {/* Message Input - Only show for "My Island" */}
-      {currentIsland === 0 && (
-        <View style={[styles.messageInputContainer, { bottom: keyboardHeight }]}>
-          <View style={styles.messageInput}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Share something about your cat..."
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              maxLength={200}
-            />
-            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-              <TouchableOpacity 
-                style={[
-                  styles.sendButton, 
-                  !message.trim() && styles.disabledSendButton
-                ]}
-                onPress={handleSendMessage}
-                disabled={!message.trim()}
-              >
-                <Ionicons
-                  name="paper-plane"
-                  size={20}
-                  color="#FFFFFF"
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </View>
-      )}
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+
   keyboardAvoidingView: {
     flex: 1,
   },
@@ -322,20 +323,22 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.6,
   },
   messageBubble: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    padding: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    borderRadius: 50,
+    padding: SPACING.md,
     marginBottom: SPACING.xs,
     maxWidth: '100%',
   },
   messageText: {
     ...TYPOGRAPHY.caption,
-    color: COLORS.surface,
+    color: COLORS.black,
     marginBottom: SPACING.xs,
   },
   messageTime: {
     ...TYPOGRAPHY.small,
-    color: COLORS.surface,
+    color: COLORS.black,
     opacity: 0.8,
   },
   messageInputContainer: {
@@ -347,6 +350,27 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
+  },
+  pillInputContainer: {
+    padding: SPACING.lg,
+    paddingTop: SPACING.md,
+  },
+  pillInput: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: COLORS.surface,
+    borderRadius: 25,
+    padding: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   messageInput: {
     flexDirection: 'row',

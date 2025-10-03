@@ -75,7 +75,7 @@ const PetProfilesScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>My Cats</Text>
         <TouchableOpacity style={styles.addButton} onPress={handleAddPet}>
@@ -127,7 +127,7 @@ const PetProfilesScreen: React.FC = () => {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

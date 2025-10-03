@@ -23,6 +23,7 @@ export const COLORS = {
   error: '#E74C3C',
   disabled: '#BDC3C7',
   progress: '#FF9633',
+  black: '#000000',
 };
 
 export const SPACING = {

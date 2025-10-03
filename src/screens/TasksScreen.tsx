@@ -466,10 +466,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     padding: SPACING.lg,
-    paddingTop: SPACING.xxl + SPACING.xl + SPACING.lg, // Add even more top padding to move cards down
-    position: 'relative', // Add relative positioning for absolute children
+    position: 'relative',
   },
-  // Swipe indicators
   swipeIndicator: {
     position: 'absolute',
     top: '50%',
