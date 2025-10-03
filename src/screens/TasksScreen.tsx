@@ -269,11 +269,13 @@ const TasksScreen: React.FC = () => {
 
   const renderCard = (task: any, index: number, relativeIndex: number) => {
     const isTopCard = relativeIndex === 0;
+    
+    // Calculate scale for inactive cards (gentler scaling)
+    const scaleFactor = isTopCard ? 1 : Math.max(0.95 - (relativeIndex * 0.03), 0.7);
 
     const cardStyle = [
       styles.card,
       isTopCard && styles.topCard,
-
     ];
 
     return (
@@ -282,11 +284,13 @@ const TasksScreen: React.FC = () => {
         style={[
           cardStyle,
           {
-            top: isTopCard ? 60 : relativeIndex * 15 - (dailyTasks.length) * 15 + 60, // Move all cards down by 60px
+            bottom: isTopCard ? 160 : 175 + (relativeIndex * 25), // Stack cards even more aggressively
+            zIndex: isTopCard ? 10 : 10 - relativeIndex, // Higher zIndex for cards closer to front
             transform: [
               { translateX: isTopCard ? position.x : 0 },
               { translateY: isTopCard ? position.y : 0 }, // Only swipe animation for active card
               { rotate: isTopCard ? rotate : '0deg' },
+              { scale: scaleFactor }, // Apply proportional scaling
             ],
           },
           isTopCard && {
@@ -389,6 +393,7 @@ const TasksScreen: React.FC = () => {
             {dailyTasks
               .map((task, index) => ({ task, index }))
               .filter(({ index }) => index >= currentCardIndex)
+              .slice(0, 3) // Only show next 2 cards (3 cards total: active + 2 behind)
               .map(({ task, index }, relativeIndex) => renderCard(task, index, relativeIndex))}
           </>
         )}
