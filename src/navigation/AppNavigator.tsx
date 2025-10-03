@@ -128,7 +128,14 @@ const MainTabNavigator = () => {
         screenOptions={{
           headerStyle: {
             backgroundColor: '#FFFFFF',
-            zIndex: 100,
+            shadowColor: 'transparent',
+            shadowOffset: {
+              width: 0,
+              height: 0,
+            },
+            shadowOpacity: 0,
+            shadowRadius: 0,
+            elevation: 0,
           },
           headerTitleStyle: {
             fontSize: 35,
