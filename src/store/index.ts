@@ -32,6 +32,9 @@ interface AppStore extends AppState {
   
   // Reset
   reset: () => void;
+  
+  // Sign out
+  signOut: () => void;
 }
 
 const initialState: AppState = {
@@ -111,6 +114,15 @@ export const useAppStore = create<AppStore>()(
       })),
       
       reset: () => set(initialState),
+      
+      signOut: () => set({
+        user: null,
+        pets: [],
+        currentPet: null,
+        isOnboardingComplete: false,
+        isAuthenticated: false,
+        isLoading: false,
+      }),
     }),
     {
       name: 'catable-storage',

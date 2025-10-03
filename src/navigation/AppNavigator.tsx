@@ -148,17 +148,59 @@ const MainTabNavigator = () => {
         <Tab.Screen 
           name="Tasks" 
           component={TasksScreen}
-          options={{ title: 'Tasks' }}
+          options={({ navigation }) => ({
+            title: 'Tasks',
+            headerRight: () => (
+              <TouchableOpacity
+                style={styles.headerProfileButton}
+                onPress={() => navigation.getParent()?.navigate('Profile')}
+              >
+                <Ionicons
+                  name="person-circle-outline"
+                  size={32}
+                  color="#2C3E50"
+                />
+              </TouchableOpacity>
+            ),
+          })}
         />
         <Tab.Screen 
           name="PetProfiles" 
           component={PetProfilesScreen}
-          options={{ title: 'Pets' }}
+          options={({ navigation }) => ({
+            title: 'Pets',
+            headerRight: () => (
+              <TouchableOpacity
+                style={styles.headerProfileButton}
+                onPress={() => navigation.getParent()?.navigate('Profile')}
+              >
+                <Ionicons
+                  name="person-circle-outline"
+                  size={32}
+                  color="#2C3E50"
+                />
+              </TouchableOpacity>
+            ),
+          })}
         />
         <Tab.Screen 
           name="Community" 
           component={CommunityScreen}
-          options={{ title: 'Community' }}
+          options={({ navigation }) => ({
+            title: 'Community',
+            headerRight: () => (
+              <TouchableOpacity
+                style={styles.headerProfileButton}
+                onPress={() => navigation.getParent()?.navigate('Profile')}
+              >
+                <Ionicons
+                  name="person-circle-outline"
+                  size={32}
+                  color="#2C3E50"
+                />
+              </TouchableOpacity>
+            ),
+          })}
         />
       </Tab.Navigator>
     </ActiveScreenContext.Provider>
@@ -279,6 +321,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
     elevation: 8,
+  },
+  headerProfileButton: {
+    marginRight: 16,
+    padding: 4,
   },
 });
 
