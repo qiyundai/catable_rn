@@ -189,18 +189,17 @@ const AuthScreen: React.FC = () => {
             <View style={styles.dividerLine} />
           </View>
 
-          {SOCIAL_LOGIN_PROVIDERS.map((provider) => (
-            <TouchableOpacity
-              key={provider.id}
-              style={[styles.socialButton, { borderColor: provider.color }]}
-              onPress={() => handleSocialLogin(provider.id)}
-            >
-              <Text style={styles.socialButtonIcon}>{provider.icon}</Text>
-              <Text style={styles.socialButtonText}>
-                Continue with {provider.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.socialButtonsContainer}>
+            {SOCIAL_LOGIN_PROVIDERS.map((provider) => (
+              <TouchableOpacity
+                key={provider.id}
+                style={[styles.socialButton, { backgroundColor: provider.color }]}
+                onPress={() => handleSocialLogin(provider.id)}
+              >
+                <Text style={styles.socialButtonIcon}>{provider.icon}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
             <Text style={styles.guestButtonText}>Continue as Guest</Text>
@@ -286,22 +285,32 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
   },
-  socialButton: {
+  socialButtonsContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    gap: SPACING.lg,
+  },
+  socialButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    overflow: 'hidden',
   },
   socialButtonIcon: {
-    fontSize: 20,
-    marginRight: SPACING.sm,
-  },
-  socialButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 24,
+    color: '#FFFFFF',
   },
   guestButton: {
     alignItems: 'center',
