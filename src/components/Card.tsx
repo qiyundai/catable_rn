@@ -1,85 +1,88 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ViewStyle,
-  TouchableOpacity,
-} from 'react-native';
-import { COLORS, SPACING } from '../constants';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const CARD_WIDTH = screenWidth * 0.75;
+const CARD_HEIGHT = screenHeight * 0.5;
 
 interface CardProps {
-  children: React.ReactNode;
-  style?: ViewStyle;
-  onPress?: () => void;
-  variant?: 'default' | 'elevated' | 'outlined';
-  padding?: 'none' | 'small' | 'medium' | 'large';
+  title: string;
+  description: string;
+  icon: string;
+  children?: React.ReactNode;
+  style?: any;
 }
 
-const Card: React.FC<CardProps> = ({
+const Card: React.FC<CardProps> = ({ 
+  title, 
+  description, 
+  icon, 
   children,
-  style,
-  onPress,
-  variant = 'default',
-  padding = 'medium',
+  style 
 }) => {
-  const getCardStyle = (): ViewStyle => {
-    const baseStyle: ViewStyle = {
-      backgroundColor: COLORS.surface,
-      borderRadius: 12,
-    };
-
-    const variantStyles = {
-      default: {
-        borderWidth: 1,
-        borderColor: COLORS.border,
-      },
-      elevated: {
-        shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 5,
-      },
-      outlined: {
-        borderWidth: 2,
-        borderColor: COLORS.primary,
-      },
-    };
-
-    const paddingStyles = {
-      none: {},
-      small: { padding: SPACING.sm },
-      medium: { padding: SPACING.md },
-      large: { padding: SPACING.lg },
-    };
-
-    return {
-      ...baseStyle,
-      ...variantStyles[variant],
-      ...paddingStyles[padding],
-    };
-  };
-
-  if (onPress) {
-    return (
-      <TouchableOpacity
-        style={[getCardStyle(), style]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        {children}
-      </TouchableOpacity>
-    );
-  }
-
   return (
-    <View style={[getCardStyle(), style]}>
-      {children}
+    <View style={[styles.card, style]}>
+      <View style={styles.cardContent}>
+        <View style={styles.cardIcon}>
+          <Text style={styles.cardIconText}>{icon}</Text>
+        </View>
+        
+        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.cardDescription}>{description}</Text>
+        
+        {children}
+      </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardContent: {
+    flex: 1,
+    padding: SPACING.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.lg,
+  },
+  cardIconText: {
+    fontSize: 40,
+  },
+  cardTitle: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: SPACING.md,
+  },
+  cardDescription: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: SPACING.xl,
+    lineHeight: 24,
+  },
+});
 
 export default Card;

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import ProgressBar from '../components/ProgressBar';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.75; // 75% of screen width
@@ -327,17 +328,12 @@ const TasksScreen: React.FC = () => {
           <Text style={styles.streakLabel}>Day Streak</Text>
         </View>
         <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>
-            {completedTasks}/{totalTasks} tasks completed
-          </Text>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${(completedTasks / totalTasks) * 100}%` }
-              ]} 
-            />
-          </View>
+          <ProgressBar 
+            current={completedTasks} 
+            total={totalTasks}
+            showText={true}
+            height={16}
+          />
         </View>
       </View>
 
@@ -427,30 +423,6 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     flex: 1,
-  },
-  progressText: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  progressBar: {
-    height: 16,
-    backgroundColor: COLORS.border,
-    borderRadius: 8,
-    zIndex: 10, // Ensure progress bar is above cards
-    shadowColor: COLORS.progress,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: COLORS.progress,
-    borderRadius: 8,
   },
   petInfo: {
     padding: SPACING.lg,
