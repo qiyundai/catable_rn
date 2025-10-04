@@ -14,20 +14,36 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store';
 import { LoginForm, RegisterForm } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, SOCIAL_LOGIN_PROVIDERS } from '../constants';
+import { Logo } from '../components/Logo';
 
 const AuthScreen: React.FC = () => {
+  const [showInitialView, setShowInitialView] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   const [loginForm, setLoginForm] = useState<LoginForm>({
     email: '',
     password: '',
   });
   const [registerForm, setRegisterForm] = useState<RegisterForm>({
-    displayName: '',
+    userName: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
   const { setUser, setAuthenticated } = useAppStore();
+
+  const handleInitialLogin = () => {
+    setIsLogin(true);
+    setShowInitialView(false);
+  };
+
+  const handleInitialRegister = () => {
+    setIsLogin(false);
+    setShowInitialView(false);
+  };
+
+  const handleBackToInitial = () => {
+    setShowInitialView(true);
+  };
 
   const handleLogin = async () => {
     if (!loginForm.email || !loginForm.password) {
@@ -39,7 +55,7 @@ const AuthScreen: React.FC = () => {
     const mockUser = {
       id: '1',
       email: loginForm.email,
-      displayName: 'Cat Owner',
+      userName: 'Cat Owner',
       region: 'US',
       language: 'en' as const,
       isGuest: false,
@@ -52,7 +68,7 @@ const AuthScreen: React.FC = () => {
   };
 
   const handleRegister = async () => {
-    if (!registerForm.displayName || !registerForm.email || !registerForm.password) {
+    if (!registerForm.userName || !registerForm.email || !registerForm.password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -66,7 +82,7 @@ const AuthScreen: React.FC = () => {
     const mockUser = {
       id: '1',
       email: registerForm.email,
-      displayName: registerForm.displayName,
+      userName: registerForm.userName,
       region: 'US',
       language: 'en' as const,
       isGuest: false,
@@ -83,7 +99,7 @@ const AuthScreen: React.FC = () => {
     const mockUser = {
       id: '1',
       email: `user@${provider}.com`,
-      displayName: `${provider} User`,
+      userName: `${provider} User`,
       region: 'US',
       language: 'en' as const,
       isGuest: false,
@@ -99,7 +115,7 @@ const AuthScreen: React.FC = () => {
     const guestUser = {
       id: 'guest',
       email: '',
-      displayName: 'Guest User',
+      userName: 'Guest User',
       region: 'US',
       language: 'en' as const,
       isGuest: true,
@@ -118,103 +134,132 @@ const AuthScreen: React.FC = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>CAT-able</Text>
-          <Text style={styles.subtitle}>
-            {isLogin ? 'Welcome back!' : 'Create your account'}
-          </Text>
-        </View>
-
-        <View style={styles.formContainer}>
-          {isLogin ? (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={loginForm.email}
-                onChangeText={(text) => setLoginForm({ ...loginForm, email: text })}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={loginForm.password}
-                onChangeText={(text) => setLoginForm({ ...loginForm, password: text })}
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-                <Text style={styles.primaryButtonText}>Sign In</Text>
-              </TouchableOpacity>
-            </>
+          {showInitialView ? (
+            <View style={styles.initialView}>
+              <View style={styles.header}>
+                <Logo />
+              </View>
+              
+              <View style={styles.initialButtonsContainer}>
+                <TouchableOpacity style={styles.loginButton} onPress={handleInitialLogin}>
+                  <Text style={styles.loginButtonText}>Login</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.registerButton} onPress={handleInitialRegister}>
+                  <Text style={styles.registerButtonText}>Register</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.guestLink} onPress={handleGuestMode}>
+                  <Text style={styles.guestLinkText}>Continue as a guest</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
             <>
-              <TextInput
-                style={styles.input}
-                placeholder="Display Name"
-                value={registerForm.displayName}
-                onChangeText={(text) => setRegisterForm({ ...registerForm, displayName: text })}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={registerForm.email}
-                onChangeText={(text) => setRegisterForm({ ...registerForm, email: text })}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={registerForm.password}
-                onChangeText={(text) => setRegisterForm({ ...registerForm, password: text })}
-                secureTextEntry
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm Password"
-                value={registerForm.confirmPassword}
-                onChangeText={(text) => setRegisterForm({ ...registerForm, confirmPassword: text })}
-                secureTextEntry
-              />
-              <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
-                <Text style={styles.primaryButtonText}>Sign Up</Text>
-              </TouchableOpacity>
-            </>
-          )}
+              <View style={styles.header}>
+                <Text style={styles.subtitle}>
+                  {isLogin ? 'Welcome back!' : 'Create your account'}
+                </Text>
+              </View>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+              <TouchableOpacity
+                style={styles.backButtonTop}
+                onPress={handleBackToInitial}
+              >
+                <Text style={styles.backButtonIcon}>‹</Text>
+              </TouchableOpacity>
+
+              <View style={styles.formContainer}>
+                {isLogin ? (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      value={loginForm.email}
+                      onChangeText={(text) => setLoginForm({ ...loginForm, email: text })}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      value={loginForm.password}
+                      onChangeText={(text) => setLoginForm({ ...loginForm, password: text })}
+                      secureTextEntry
+                    />
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
+                      <Text style={styles.primaryButtonText}>Login</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Username"
+                      value={registerForm.userName}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, userName: text })}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      value={registerForm.email}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, email: text })}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      value={registerForm.password}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, password: text })}
+                      secureTextEntry
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Confirm Password"
+                      value={registerForm.confirmPassword}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, confirmPassword: text })}
+                      secureTextEntry
+                    />
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
+                      <Text style={styles.primaryButtonText}>Register</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>{isLogin ? 'Or login with' : 'Or sign up with'}</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+          <View style={styles.socialButtonsContainer}>
+            {SOCIAL_LOGIN_PROVIDERS.map((provider) => (
+              <TouchableOpacity
+                key={provider.id}
+                style={[styles.socialButton, { borderColor: provider.color }]}
+                onPress={() => handleSocialLogin(provider.id)}
+              >
+                <Text style={[styles.socialButtonIcon, { color: provider.color }]}>{provider.icon}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {SOCIAL_LOGIN_PROVIDERS.map((provider) => (
-            <TouchableOpacity
-              key={provider.id}
-              style={[styles.socialButton, { borderColor: provider.color }]}
-              onPress={() => handleSocialLogin(provider.id)}
-            >
-              <Text style={styles.socialButtonIcon}>{provider.icon}</Text>
-              <Text style={styles.socialButtonText}>
-                Continue with {provider.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
+                  <Text style={styles.guestButtonText}>Continue as Guest</Text>
+                </TouchableOpacity>
 
-          <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
-            <Text style={styles.guestButtonText}>Continue as Guest</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.switchButton}
-            onPress={() => setIsLogin(!isLogin)}
-          >
-            <Text style={styles.switchButtonText}>
-              {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+                <TouchableOpacity
+                  style={styles.switchButton}
+                  onPress={() => setIsLogin(!isLogin)}
+                >
+                  <Text style={styles.switchButtonText}>
+                    {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -238,14 +283,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.xxl,
   },
-  title: {
-    ...TYPOGRAPHY.h1,
-    color: COLORS.primary,
-    marginBottom: SPACING.sm,
-  },
   subtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    marginTop: SPACING.md,
   },
   formContainer: {
     width: '100%',
@@ -260,7 +301,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   primaryButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.darkInk,
     borderRadius: 8,
     padding: SPACING.md,
     alignItems: 'center',
@@ -286,22 +327,24 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
   },
-  socialButton: {
+  socialButtonsContainer: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    gap: SPACING.md,
+  },
+  socialButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderRadius: 8,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
   },
   socialButtonIcon: {
-    fontSize: 20,
-    marginRight: SPACING.sm,
-  },
-  socialButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 24,
   },
   guestButton: {
     alignItems: 'center',
@@ -320,6 +363,78 @@ const styles = StyleSheet.create({
   switchButtonText: {
     color: COLORS.textSecondary,
     fontSize: 14,
+  },
+  initialView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialButtonsContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: SPACING.xxl,
+  },
+  loginButton: {
+    backgroundColor: COLORS.darkInk,
+    borderRadius: 8,
+    padding: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    width: '100%',
+    maxWidth: 300,
+  },
+  loginButtonText: {
+    color: COLORS.surface,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerButton: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.darkInk,
+    borderRadius: 8,
+    padding: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    width: '100%',
+    maxWidth: 300,
+  },
+  registerButtonText: {
+    color: COLORS.darkInk,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guestLink: {
+    padding: SPACING.sm,
+  },
+  guestLinkText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  backButtonTop: {
+    position: 'absolute',
+    top: SPACING.lg,
+    left: SPACING.lg,
+    width: 44,
+    height: 44,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  backButtonIcon: {
+    fontSize: 24,
+    color: COLORS.darkInk,
+    fontWeight: 'bold',
   },
 });
 

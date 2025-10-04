@@ -24,6 +24,7 @@ export const COLORS = {
   disabled: '#BDC3C7',
   progress: '#FF9633',
   black: '#000000',
+  darkInk: '#1E232C',
 };
 
 export const SPACING = {

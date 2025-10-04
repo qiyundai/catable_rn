@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import FloatingIsland from '../components/FloatingIsland';
 
 const { width, height } = Dimensions.get('window');
 
@@ -118,29 +119,21 @@ const CommunityScreen: React.FC = () => {
   const renderFloatingIsland = (island: any) => {
     return (
       <View key={island.id} style={styles.island}>
-        <View style={styles.islandHeader}>
-          <Text style={styles.islandName}>{island.name}</Text>
-          <Text style={styles.islandOwner}>by {island.owner}</Text>
-        </View>
+        {/* Floating Island Animation */}
+        <FloatingIsland islandData={island} style={styles.floatingIsland} />
         
-        <View style={styles.catsContainer}>
-          {island.cats.map((cat: any, index: number) => (
-            <View key={index} style={styles.catAvatar}>
-              <Text style={styles.catEmoji}>{cat.avatar || '🐱'}</Text>
-              <Text style={styles.catName}>{cat.name}</Text>
+        {/* Island Info Overlay */}
+        <View style={styles.islandInfoOverlay}>
+          {/* Latest message for this island */}
+          {island.messages.length > 0 && (
+            <View style={styles.messageBubbles}>
+              <View style={styles.messageBubble}>
+                <Text style={styles.messageText}>{island.messages[0].text}</Text>
+                <Text style={styles.messageTime}>{island.messages[0].timestamp}</Text>
+              </View>
             </View>
-          ))}
+          )}
         </View>
-
-        {/* Latest message for this island */}
-        {island.messages.length > 0 && (
-          <View style={styles.messageBubbles}>
-            <View style={styles.messageBubble}>
-              <Text style={styles.messageText}>{island.messages[0].text}</Text>
-              <Text style={styles.messageTime}>{island.messages[0].timestamp}</Text>
-            </View>
-          </View>
-        )}
       </View>
     );
   };
@@ -277,44 +270,23 @@ const styles = StyleSheet.create({
   },
   island: {
     flex: 1,
-    backgroundColor: COLORS.surface,
+    backgroundColor: 'transparent',
+    margin: SPACING.lg,
+    position: 'relative',
+  },
+  floatingIsland: {
+    flex: 1,
+  },
+  islandInfoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 20,
     padding: SPACING.lg,
-    margin: SPACING.lg,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  islandHeader: {
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  islandName: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  islandOwner: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  catsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginBottom: SPACING.md,
-  },
-  catAvatar: {
-    alignItems: 'center',
-    margin: SPACING.sm,
-  },
-  catEmoji: {
-    fontSize: 32,
-    marginBottom: SPACING.xs,
-  },
-  catName: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.text,
-    textAlign: 'center',
+    justifyContent: 'space-between',
   },
   messageBubbles: {
     position: 'absolute',
@@ -357,10 +329,10 @@ const styles = StyleSheet.create({
   },
   pillInput: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     backgroundColor: COLORS.surface,
-    borderRadius: 25,
-    padding: SPACING.sm,
+    paddingLeft: SPACING.md,
+    borderRadius: 50,
     borderWidth: 1,
     borderColor: COLORS.border,
     shadowColor: '#000',
@@ -389,9 +361,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   sendButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#18C07A',
     alignItems: 'center',
     justifyContent: 'center',

@@ -3,7 +3,7 @@
 export interface User {
   id: string;
   email: string;
-  displayName: string;
+  userName: string;
   region: string;
   language: 'en' | 'zh' | 'ja';
   isGuest: boolean;
@@ -116,7 +116,7 @@ export interface LoginForm {
 }
 
 export interface RegisterForm {
-  displayName: string;
+  userName: string;
   email: string;
   password: string;
   confirmPassword: string;
