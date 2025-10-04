@@ -30,20 +30,22 @@ const CARD_HEIGHT = screenHeight * 0.6; // 60% of screen height
 
 const OnboardingScreen: React.FC = () => {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [petForm, setPetForm] = useState<PetForm>({
+  const [petForms, setPetForms] = useState<PetForm[]>([{
     name: '',
     breed: '',
     age: 1,
     gender: 'other',
     personality: '',
-  });
+  }]);
+  const [currentCatIndex, setCurrentCatIndex] = useState(0);
   const [ageMonths, setAgeMonths] = useState(12); // Default to 1 year (12 months)
   const [selectedYear, setSelectedYear] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(0);
   const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>([]);
   const [selectedRecurringTasks, setSelectedRecurringTasks] = useState<string[]>([]);
   const [reminderTime, setReminderTime] = useState({ hour: 9, minute: 0, period: 'AM' });
-  const [catPhoto, setCatPhoto] = useState<string | null>(null);
+  const [catPhotos, setCatPhotos] = useState<(string | null)[]>([null]);
+  const [dynamicSteps, setDynamicSteps] = useState<any[]>([]);
   
   // Custom picker states
   const [showAgePicker, setShowAgePicker] = useState(false);
@@ -60,6 +62,44 @@ const OnboardingScreen: React.FC = () => {
 
   const { addPet, setOnboardingComplete } = useAppStore();
 
+  // Generate dynamic steps based on number of cats
+  const generateDynamicSteps = () => {
+    const baseSteps = [...ONBOARDING_STEPS];
+    const dynamicSteps: any[] = [];
+    
+    // For each cat after the first one, insert cat_name and cat_info steps
+    for (let i = 1; i < petForms.length; i++) {
+      dynamicSteps.push(
+        {
+          id: `cat_name_${i}`,
+          title: `What's your ${i === 1 ? 'second' : `${i + 1}th`} cat's name?`,
+          description: `Add a name and photo for your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
+          component: 'CatName',
+          catIndex: i,
+        },
+        {
+          id: `cat_info_${i}`,
+          title: `Basic Information`,
+          description: `Tell us about your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
+          component: 'CatInfo',
+          catIndex: i,
+        }
+      );
+    }
+    
+    // Insert dynamic steps after the first cat_info and before add_another
+    const addAnotherIndex = baseSteps.findIndex(step => step.id === 'add_another');
+    const result = [
+      ...baseSteps.slice(0, addAnotherIndex),
+      ...dynamicSteps,
+      ...baseSteps.slice(addAnotherIndex)
+    ];
+    
+    return result;
+  };
+
+  const allSteps = generateDynamicSteps();
+
   // Picker functions
   const openAgePicker = () => {
     setTempSelectedYear(selectedYear);
@@ -68,17 +108,17 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const openGenderPicker = () => {
-    setTempGender(petForm.gender);
+    setTempGender(getCurrentPetForm().gender);
     setShowGenderPicker(true);
   };
 
   const openBreedPicker = () => {
-    setTempBreed(petForm.breed);
+    setTempBreed(getCurrentPetForm().breed);
     setShowBreedPicker(true);
   };
 
   const openPersonalityPicker = () => {
-    setTempPersonality(petForm.personality);
+    setTempPersonality(getCurrentPetForm().personality);
     setShowPersonalityPicker(true);
   };
 
@@ -91,7 +131,7 @@ const OnboardingScreen: React.FC = () => {
     setSelectedMonth(tempSelectedMonth);
     const totalMonths = (tempSelectedYear * 12) + tempSelectedMonth;
     setAgeMonths(totalMonths);
-    setPetForm(prev => ({ ...prev, age: tempSelectedYear || 1 }));
+    updateCurrentPetForm({ age: tempSelectedYear || 1 });
     setShowAgePicker(false);
   };
 
@@ -100,7 +140,7 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const saveGenderPicker = () => {
-    setPetForm(prev => ({ ...prev, gender: tempGender }));
+    updateCurrentPetForm({ gender: tempGender });
     setShowGenderPicker(false);
   };
 
@@ -109,7 +149,7 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const saveBreedPicker = () => {
-    setPetForm(prev => ({ ...prev, breed: tempBreed }));
+    updateCurrentPetForm({ breed: tempBreed });
     setShowBreedPicker(false);
   };
 
@@ -118,7 +158,7 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const savePersonalityPicker = () => {
-    setPetForm(prev => ({ ...prev, personality: tempPersonality }));
+    updateCurrentPetForm({ personality: tempPersonality });
     setShowPersonalityPicker(false);
   };
 
@@ -189,26 +229,29 @@ const OnboardingScreen: React.FC = () => {
   });
 
   const handleNext = () => {
-    if (currentCardIndex < ONBOARDING_STEPS.length - 1) {
+    if (currentCardIndex < allSteps.length - 1) {
       nextCard('right');
     } else {
-      // Complete onboarding
-      if (petForm.name) {
-        const newPet: any = {
-          id: Date.now().toString(),
-          userId: '1',
-          ...petForm,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        addPet(newPet);
-      }
+      // Complete onboarding - save all cats
+      petForms.forEach((petForm, index) => {
+        if (petForm.name) {
+          const newPet: any = {
+            id: Date.now().toString() + index,
+            userId: '1',
+            ...petForm,
+            avatar: catPhotos[index] || undefined,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          addPet(newPet);
+        }
+      });
       setOnboardingComplete(true);
     }
   };
 
   const handleSkip = () => {
-    if (currentCardIndex < ONBOARDING_STEPS.length - 1) {
+    if (currentCardIndex < allSteps.length - 1) {
       nextCard('left');
     } else {
       setOnboardingComplete(true);
@@ -299,6 +342,46 @@ const OnboardingScreen: React.FC = () => {
     }));
   };
 
+  const addAnotherCat = () => {
+    setPetForms(prev => [...prev, {
+      name: '',
+      breed: '',
+      age: 1,
+      gender: 'other',
+      personality: '',
+    }]);
+    setCatPhotos(prev => [...prev, null]);
+    // The dynamic steps will be regenerated automatically
+  };
+
+  const getCurrentPetForm = () => {
+    const currentStep = allSteps[currentCardIndex];
+    const catIndex = currentStep?.catIndex || 0;
+    return petForms[catIndex] || petForms[0];
+  };
+
+  const updateCurrentPetForm = (updates: Partial<PetForm>) => {
+    const currentStep = allSteps[currentCardIndex];
+    const catIndex = currentStep?.catIndex || 0;
+    setPetForms(prev => prev.map((form, index) => 
+      index === catIndex ? { ...form, ...updates } : form
+    ));
+  };
+
+  const getCurrentCatPhoto = () => {
+    const currentStep = allSteps[currentCardIndex];
+    const catIndex = currentStep?.catIndex || 0;
+    return catPhotos[catIndex] || null;
+  };
+
+  const setCurrentCatPhoto = (photo: string | null) => {
+    const currentStep = allSteps[currentCardIndex];
+    const catIndex = currentStep?.catIndex || 0;
+    setCatPhotos(prev => prev.map((p, index) => 
+      index === catIndex ? photo : p
+    ));
+  };
+
   const pickImage = async () => {
     try {
       // Request permission
@@ -352,7 +435,7 @@ const OnboardingScreen: React.FC = () => {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setCatPhoto(result.assets[0].uri);
+        setCurrentCatPhoto(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -370,7 +453,7 @@ const OnboardingScreen: React.FC = () => {
       });
 
       if (!result.canceled && result.assets[0]) {
-        setCatPhoto(result.assets[0].uri);
+        setCurrentCatPhoto(result.assets[0].uri);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -379,6 +462,9 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const renderCardContent = (step: any) => {
+    const currentPetForm = getCurrentPetForm();
+    const currentCatPhoto = getCurrentCatPhoto();
+    
     switch (step.id) {
       case 'welcome':
         return (
@@ -392,6 +478,9 @@ const OnboardingScreen: React.FC = () => {
         );
 
       case 'cat_name':
+      case 'cat_name_1':
+      case 'cat_name_2':
+      case 'cat_name_3':
         return (
           <View style={styles.cardContent}>
             <View style={styles.cardIcon}>
@@ -405,14 +494,14 @@ const OnboardingScreen: React.FC = () => {
                 style={styles.textInput}
                 placeholder="Enter your cat's name"
                 placeholderTextColor={COLORS.textSecondary}
-                value={petForm.name}
-                onChangeText={(text) => setPetForm(prev => ({ ...prev, name: text }))}
+                value={currentPetForm.name}
+                onChangeText={(text) => updateCurrentPetForm({ name: text })}
                 autoFocus={false}
               />
             </View>
             <TouchableOpacity style={styles.avatarPlaceholder} onPress={pickImage}>
-              {catPhoto ? (
-                <Image source={{ uri: catPhoto }} style={styles.avatarImage} />
+              {currentCatPhoto ? (
+                <Image source={{ uri: currentCatPhoto }} style={styles.avatarImage} />
               ) : (
                 <>
               <Text style={styles.avatarEmoji}>📷</Text>
@@ -424,6 +513,9 @@ const OnboardingScreen: React.FC = () => {
         );
 
       case 'cat_info':
+      case 'cat_info_1':
+      case 'cat_info_2':
+      case 'cat_info_3':
         return (
           <View style={styles.cardContent}>
             <View style={styles.cardIcon}>
@@ -452,7 +544,7 @@ const OnboardingScreen: React.FC = () => {
                   onPress={openGenderPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{petForm.gender.charAt(0).toUpperCase() + petForm.gender.slice(1)}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.gender.charAt(0).toUpperCase() + currentPetForm.gender.slice(1)}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
@@ -465,7 +557,7 @@ const OnboardingScreen: React.FC = () => {
                   onPress={openBreedPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{petForm.breed || 'Select breed'}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.breed || 'Select breed'}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
@@ -478,7 +570,7 @@ const OnboardingScreen: React.FC = () => {
                   onPress={openPersonalityPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{petForm.personality || 'Select personality'}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.personality || 'Select personality'}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
@@ -495,6 +587,20 @@ const OnboardingScreen: React.FC = () => {
             </View>
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.addButton]}
+                onPress={addAnotherCat}
+              >
+                <Text style={styles.addButtonText}>Add Another Cat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.continueButton]}
+                onPress={handleNext}
+              >
+                <Text style={styles.continueButtonText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         );
 
@@ -647,7 +753,7 @@ const OnboardingScreen: React.FC = () => {
   };
 
   // Check if onboarding is complete
-  const onboardingComplete = currentCardIndex >= ONBOARDING_STEPS.length;
+  const onboardingComplete = currentCardIndex >= allSteps.length;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -655,7 +761,7 @@ const OnboardingScreen: React.FC = () => {
       <View style={styles.progressContainer}>
         <ProgressBar 
           current={currentCardIndex + 1} 
-          total={ONBOARDING_STEPS.length}
+          total={allSteps.length}
           showText={true}
           height={16}
           />
@@ -701,11 +807,11 @@ const OnboardingScreen: React.FC = () => {
               ]}
             >
               <Text style={styles.rightIndicatorText}>
-                {currentCardIndex === ONBOARDING_STEPS.length - 1 ? 'START' : 'NEXT'}
+                {currentCardIndex === allSteps.length - 1 ? 'START' : 'NEXT'}
         </Text>
             </Animated.View>
 
-            {ONBOARDING_STEPS
+            {allSteps
               .map((step, index) => ({ step, index }))
               .filter(({ index }) => index >= currentCardIndex)
               .slice(0, 3) // Only show next 2 cards (3 cards total: active + 2 behind)
@@ -1251,6 +1357,36 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
     fontWeight: '600',
+  },
+  // Add Another Cat Button Styles
+  buttonContainer: {
+    width: '100%',
+    marginTop: SPACING.lg,
+  },
+  actionButton: {
+    width: '100%',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 12,
+    marginBottom: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButton: {
+    backgroundColor: COLORS.primary,
+  },
+  continueButton: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  addButtonText: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.surface,
+  },
+  continueButtonText: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.primary,
   },
 });
 
