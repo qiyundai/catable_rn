@@ -13,18 +13,27 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
   const itemHeight = 40;
   const visibleItems = 5; // Show 5 items (2 above, 1 center, 2 below)
   const containerHeight = itemHeight * visibleItems;
+  const totalContentHeight = items.length * itemHeight + (itemHeight * 4); // Items + padding
 
   const handleScroll = (event: any) => {
     const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / itemHeight); // Subtract 2 to account for top padding items
+    const index = Math.round(y / itemHeight); // Direct index
     if (index >= 0 && index < items.length && index !== selectedIndex) {
+      onSelectionChange(index);
+    }
+  };
+
+  const handleMomentumScrollEnd = (event: any) => {
+    const y = event.nativeEvent.contentOffset.y;
+    const index = Math.round(y / itemHeight);
+    if (index >= 0 && index < items.length) {
       onSelectionChange(index);
     }
   };
 
   const scrollToIndex = (index: number) => {
     scrollViewRef.current?.scrollTo({
-      y: (index) * itemHeight, // Add 2 to account for top padding items
+      y: index * itemHeight, // Direct position
       animated: true,
     });
   };
@@ -42,19 +51,14 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
           showsVerticalScrollIndicator={false}
           snapToInterval={itemHeight}
           decelerationRate="fast"
-          onMomentumScrollEnd={handleScroll}
+          onMomentumScrollEnd={handleMomentumScrollEnd}
           onScroll={handleScroll}
           scrollEventThrottle={16}
           contentContainerStyle={styles.wheelPickerContent}
           style={styles.wheelPickerScrollView}
+          nestedScrollEnabled={true}
+          scrollEnabled={true}
         >
-          {/* Add padding items at the top */}
-          {/* {Array.from({ length: 2 }, (_, i) => (
-            <View key={`padding-top-${i}`} style={styles.wheelPickerItem}>
-              <Text style={styles.wheelPickerItemText}></Text>
-            </View>
-          ))} */}
-          
           {/* Actual items */}
           {items.map((item, index) => (
             <View key={index} style={styles.wheelPickerItem}>
@@ -66,13 +70,6 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
               </Text>
             </View>
           ))}
-          
-          {/* Add padding items at the bottom */}
-          {/* {Array.from({ length: 2 }, (_, i) => (
-            <View key={`padding-bottom-${i}`} style={styles.wheelPickerItem}>
-              <Text style={styles.wheelPickerItemText}></Text>
-            </View>
-          ))} */}
         </ScrollView>
         
         {/* Selection indicator overlay */}
@@ -101,7 +98,8 @@ const styles = StyleSheet.create({
     height: 200,
   },
   wheelPickerContent: {
-    paddingVertical: 80, // Center the visible items
+    paddingVertical: 80, // Center the visible items (2 items above + 2 items below = 80px)
+    minHeight: 200 + 160, // Ensure content is taller than ScrollView + padding
   },
   wheelPickerItem: {
     height: 40,

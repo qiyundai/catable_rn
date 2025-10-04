@@ -50,8 +50,77 @@ const OnboardingScreen: React.FC = () => {
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showBreedPicker, setShowBreedPicker] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
+  
+  // Temporary picker values (for cancel/save functionality)
+  const [tempSelectedYear, setTempSelectedYear] = useState(1);
+  const [tempSelectedMonth, setTempSelectedMonth] = useState(0);
+  const [tempGender, setTempGender] = useState<'male' | 'female' | 'other'>('other');
+  const [tempBreed, setTempBreed] = useState('');
+  const [tempPersonality, setTempPersonality] = useState('');
 
   const { addPet, setOnboardingComplete } = useAppStore();
+
+  // Picker functions
+  const openAgePicker = () => {
+    setTempSelectedYear(selectedYear);
+    setTempSelectedMonth(selectedMonth);
+    setShowAgePicker(true);
+  };
+
+  const openGenderPicker = () => {
+    setTempGender(petForm.gender);
+    setShowGenderPicker(true);
+  };
+
+  const openBreedPicker = () => {
+    setTempBreed(petForm.breed);
+    setShowBreedPicker(true);
+  };
+
+  const openPersonalityPicker = () => {
+    setTempPersonality(petForm.personality);
+    setShowPersonalityPicker(true);
+  };
+
+  const cancelAgePicker = () => {
+    setShowAgePicker(false);
+  };
+
+  const saveAgePicker = () => {
+    setSelectedYear(tempSelectedYear);
+    setSelectedMonth(tempSelectedMonth);
+    const totalMonths = (tempSelectedYear * 12) + tempSelectedMonth;
+    setAgeMonths(totalMonths);
+    setPetForm(prev => ({ ...prev, age: tempSelectedYear || 1 }));
+    setShowAgePicker(false);
+  };
+
+  const cancelGenderPicker = () => {
+    setShowGenderPicker(false);
+  };
+
+  const saveGenderPicker = () => {
+    setPetForm(prev => ({ ...prev, gender: tempGender }));
+    setShowGenderPicker(false);
+  };
+
+  const cancelBreedPicker = () => {
+    setShowBreedPicker(false);
+  };
+
+  const saveBreedPicker = () => {
+    setPetForm(prev => ({ ...prev, breed: tempBreed }));
+    setShowBreedPicker(false);
+  };
+
+  const cancelPersonalityPicker = () => {
+    setShowPersonalityPicker(false);
+  };
+
+  const savePersonalityPicker = () => {
+    setPetForm(prev => ({ ...prev, personality: tempPersonality }));
+    setShowPersonalityPicker(false);
+  };
 
   // Animation values for card gestures
   const position = useRef(new Animated.ValueXY()).current;
@@ -192,10 +261,6 @@ const OnboardingScreen: React.FC = () => {
     }
   };
 
-  const openAgePicker = () => setShowAgePicker(true);
-  const openGenderPicker = () => setShowGenderPicker(true);
-  const openBreedPicker = () => setShowBreedPicker(true);
-  const openPersonalityPicker = () => setShowPersonalityPicker(true);
 
   const showHourPicker = () => {
     const hours = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -655,29 +720,30 @@ const OnboardingScreen: React.FC = () => {
         visible={showAgePicker}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowAgePicker(false)}
+        onRequestClose={cancelAgePicker}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerContainer}>
+        <View 
+          style={styles.modalOverlay}
+        >
+          <View 
+            style={styles.pickerContainer}
+          >
             <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowAgePicker(false)}>
+              <TouchableOpacity onPress={cancelAgePicker}>
                 <Text style={styles.pickerCancelText}>Cancel</Text>
               </TouchableOpacity>
               <Text style={styles.pickerTitle}>Select Age</Text>
-              <View style={{ width: 60 }} />
+              <TouchableOpacity onPress={saveAgePicker}>
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Years</Text>
                 <WheelPicker
                   items={Array.from({ length: 20 }, (_, i) => ({ label: i.toString(), value: i }))}
-                  selectedIndex={selectedYear}
-                  onSelectionChange={(index) => {
-                    setSelectedYear(index);
-                    const totalMonths = (index * 12) + selectedMonth;
-                    setAgeMonths(totalMonths);
-                    setPetForm(prev => ({ ...prev, age: index || 1 }));
-                  }}
+                  selectedIndex={tempSelectedYear}
+                  onSelectionChange={setTempSelectedYear}
                 />
               </View>
               
@@ -685,13 +751,8 @@ const OnboardingScreen: React.FC = () => {
                 <Text style={styles.wheelLabel}>Months</Text>
                 <WheelPicker
                   items={Array.from({ length: 12 }, (_, i) => ({ label: i.toString(), value: i }))}
-                  selectedIndex={selectedMonth}
-                  onSelectionChange={(index) => {
-                    setSelectedMonth(index);
-                    const totalMonths = (selectedYear * 12) + index;
-                    setAgeMonths(totalMonths);
-                    setPetForm(prev => ({ ...prev, age: selectedYear || 1 }));
-                  }}
+                  selectedIndex={tempSelectedMonth}
+                  onSelectionChange={setTempSelectedMonth}
                 />
               </View>
             </View>
@@ -704,16 +765,22 @@ const OnboardingScreen: React.FC = () => {
         visible={showGenderPicker}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowGenderPicker(false)}
+        onRequestClose={cancelGenderPicker}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerContainer}>
+        <View 
+          style={styles.modalOverlay}
+        >
+          <View 
+            style={styles.pickerContainer}
+          >
             <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowGenderPicker(false)}>
+              <TouchableOpacity onPress={cancelGenderPicker}>
                 <Text style={styles.pickerCancelText}>Cancel</Text>
               </TouchableOpacity>
               <Text style={styles.pickerTitle}>Select Gender</Text>
-              <View style={{ width: 60 }} />
+              <TouchableOpacity onPress={saveGenderPicker}>
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
               {[
@@ -725,20 +792,17 @@ const OnboardingScreen: React.FC = () => {
                   key={option.value}
                   style={[
                     styles.optionItem,
-                    petForm.gender === option.value && styles.optionItemSelected
+                    tempGender === option.value && styles.optionItemSelected
                   ]}
-                  onPress={() => {
-                    setPetForm(prev => ({ ...prev, gender: option.value as 'male' | 'female' | 'other' }));
-                    setShowGenderPicker(false);
-                  }}
+                  onPress={() => setTempGender(option.value as 'male' | 'female' | 'other')}
                 >
                   <Text style={[
                     styles.optionText,
-                    petForm.gender === option.value && styles.optionTextSelected
+                    tempGender === option.value && styles.optionTextSelected
                   ]}>
                     {option.label}
                   </Text>
-                  {petForm.gender === option.value && (
+                  {tempGender === option.value && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
                 </TouchableOpacity>
@@ -753,16 +817,22 @@ const OnboardingScreen: React.FC = () => {
         visible={showBreedPicker}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowBreedPicker(false)}
+        onRequestClose={cancelBreedPicker}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerContainer}>
+        <View 
+          style={styles.modalOverlay}
+        >
+          <View 
+            style={styles.pickerContainer}
+          >
             <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowBreedPicker(false)}>
+              <TouchableOpacity onPress={cancelBreedPicker}>
                 <Text style={styles.pickerCancelText}>Cancel</Text>
               </TouchableOpacity>
               <Text style={styles.pickerTitle}>Select Breed</Text>
-              <View style={{ width: 60 }} />
+              <TouchableOpacity onPress={saveBreedPicker}>
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
               {[
@@ -773,25 +843,22 @@ const OnboardingScreen: React.FC = () => {
                   key={breed}
                   style={[
                     styles.optionItem,
-                    petForm.breed === breed && styles.optionItemSelected
+                    tempBreed === breed && styles.optionItemSelected
                   ]}
-                  onPress={() => {
-                    setPetForm(prev => ({ ...prev, breed }));
-                    setShowBreedPicker(false);
-                  }}
+                  onPress={() => setTempBreed(breed)}
                 >
                   <Text style={[
                     styles.optionText,
-                    petForm.breed === breed && styles.optionTextSelected
+                    tempBreed === breed && styles.optionTextSelected
                   ]}>
                     {breed}
                   </Text>
-                  {petForm.breed === breed && (
+                  {tempBreed === breed && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
                 </TouchableOpacity>
               ))}
-      </ScrollView>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -801,16 +868,22 @@ const OnboardingScreen: React.FC = () => {
         visible={showPersonalityPicker}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowPersonalityPicker(false)}
+        onRequestClose={cancelPersonalityPicker}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerContainer}>
+        <View 
+          style={styles.modalOverlay}
+        >
+          <View 
+            style={styles.pickerContainer}
+          >
             <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowPersonalityPicker(false)}>
+              <TouchableOpacity onPress={cancelPersonalityPicker}>
                 <Text style={styles.pickerCancelText}>Cancel</Text>
-        </TouchableOpacity>
+              </TouchableOpacity>
               <Text style={styles.pickerTitle}>Select Personality</Text>
-              <View style={{ width: 60 }} />
+              <TouchableOpacity onPress={savePersonalityPicker}>
+                <Text style={styles.pickerSaveText}>Save</Text>
+        </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
               {[
@@ -821,27 +894,24 @@ const OnboardingScreen: React.FC = () => {
                   key={personality}
                   style={[
                     styles.optionItem,
-                    petForm.personality === personality && styles.optionItemSelected
+                    tempPersonality === personality && styles.optionItemSelected
                   ]}
-                  onPress={() => {
-                    setPetForm(prev => ({ ...prev, personality }));
-                    setShowPersonalityPicker(false);
-                  }}
+                  onPress={() => setTempPersonality(personality)}
                 >
                   <Text style={[
                     styles.optionText,
-                    petForm.personality === personality && styles.optionTextSelected
+                    tempPersonality === personality && styles.optionTextSelected
                   ]}>
                     {personality}
           </Text>
-                  {petForm.personality === personality && (
+                  {tempPersonality === personality && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
-        </TouchableOpacity>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
-      </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -1129,6 +1199,11 @@ const styles = StyleSheet.create({
   pickerCancelText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+  },
+  pickerSaveText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.primary,
+    fontWeight: '600',
   },
   pickerTitle: {
     ...TYPOGRAPHY.h3,
