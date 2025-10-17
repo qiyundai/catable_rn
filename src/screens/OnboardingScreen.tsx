@@ -53,6 +53,11 @@ const OnboardingScreen: React.FC = () => {
   const [showBreedPicker, setShowBreedPicker] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
   
+  // Reminder time wheel picker states
+  const [selectedHourIndex, setSelectedHourIndex] = useState(8); // 9 AM (index 8)
+  const [selectedMinuteIndex, setSelectedMinuteIndex] = useState(0); // 0 minutes
+  const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0); // AM
+  
   // Temporary picker values (for cancel/save functionality)
   const [tempSelectedYear, setTempSelectedYear] = useState(1);
   const [tempSelectedMonth, setTempSelectedMonth] = useState(0);
@@ -61,6 +66,24 @@ const OnboardingScreen: React.FC = () => {
   const [tempPersonality, setTempPersonality] = useState('');
 
   const { addPet, setOnboardingComplete } = useAppStore();
+
+  // Wheel picker data arrays
+  const hourOptions = Array.from({ length: 12 }, (_, i) => ({ 
+    label: (i + 1).toString(), 
+    value: i + 1 
+  }));
+  
+  const minuteOptions = [
+    { label: '00', value: 0 },
+    { label: '15', value: 15 },
+    { label: '30', value: 30 },
+    { label: '45', value: 45 }
+  ];
+  
+  const periodOptions = [
+    { label: 'AM', value: 0 },
+    { label: 'PM', value: 1 }
+  ];
 
   // Generate dynamic steps based on number of cats
   const generateDynamicSteps = () => {
@@ -339,6 +362,31 @@ const OnboardingScreen: React.FC = () => {
     setReminderTime(prev => ({
       ...prev,
       period: prev.period === 'AM' ? 'PM' : 'AM'
+    }));
+  };
+
+  // Wheel picker handlers for reminder time
+  const handleHourChange = (index: number) => {
+    setSelectedHourIndex(index);
+    setReminderTime(prev => ({
+      ...prev,
+      hour: hourOptions[index].value
+    }));
+  };
+
+  const handleMinuteChange = (index: number) => {
+    setSelectedMinuteIndex(index);
+    setReminderTime(prev => ({
+      ...prev,
+      minute: minuteOptions[index].value
+    }));
+  };
+
+  const handlePeriodChange = (index: number) => {
+    setSelectedPeriodIndex(index);
+    setReminderTime(prev => ({
+      ...prev,
+      period: periodOptions[index].value === 0 ? 'AM' : 'PM'
     }));
   };
 
@@ -683,29 +731,31 @@ const OnboardingScreen: React.FC = () => {
             </View>
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.timePicker}>
-              <TouchableOpacity 
-                style={styles.timeColumn}
-                onPress={() => showHourPicker()}
-              >
-                <Text style={styles.timeLabel}>Hour</Text>
-                <Text style={styles.timeValue}>{reminderTime.hour}</Text>
-              </TouchableOpacity>
-              <Text style={styles.timeSeparator}>:</Text>
-              <TouchableOpacity 
-                style={styles.timeColumn}
-                onPress={() => showMinutePicker()}
-              >
-                <Text style={styles.timeLabel}>Minute</Text>
-                <Text style={styles.timeValue}>{reminderTime.minute.toString().padStart(2, '0')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.timeColumn}
-                onPress={() => togglePeriod()}
-              >
-                <Text style={styles.timeLabel}>Period</Text>
-                <Text style={styles.timeValue}>{reminderTime.period}</Text>
-              </TouchableOpacity>
+            <View style={styles.timePickerWheel}>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Hour</Text>
+                <WheelPicker
+                  items={hourOptions}
+                  selectedIndex={selectedHourIndex}
+                  onSelectionChange={handleHourChange}
+                />
+              </View>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Minute</Text>
+                <WheelPicker
+                  items={minuteOptions}
+                  selectedIndex={selectedMinuteIndex}
+                  onSelectionChange={handleMinuteChange}
+                />
+              </View>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Period</Text>
+                <WheelPicker
+                  items={periodOptions}
+                  selectedIndex={selectedPeriodIndex}
+                  onSelectionChange={handlePeriodChange}
+                />
+              </View>
             </View>
           </View>
         );
@@ -1276,6 +1326,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h2,
     color: COLORS.text,
     marginHorizontal: SPACING.sm,
+  },
+  timePickerWheel: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   // Custom Picker Styles
   modalOverlay: {
