@@ -12,6 +12,7 @@ interface TagSelectorProps {
   tasks: Task[];
   selectedTasks: string[];
   onTaskToggle: (taskId: string) => void;
+  onAddCustomTask: () => void;
   title: string;
   description: string;
 }
@@ -20,6 +21,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   tasks,
   selectedTasks,
   onTaskToggle,
+  onAddCustomTask,
   title,
   description,
 }) => {
@@ -59,23 +61,28 @@ const TagSelector: React.FC<TagSelectorProps> = ({
       </View>
 
       {/* Bench Area - Unselected Tasks */}
-      {unselectedTaskObjects.length > 0 && (
-        <View style={styles.benchArea}>
-          <Text style={styles.areaLabel}>Available ({unselectedTaskObjects.length})</Text>
-          <View style={styles.benchContent}>
-            {unselectedTaskObjects.map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                style={styles.taskTag}
-                onPress={() => onTaskToggle(task.id)}
-              >
-                {task.icon && <Text style={styles.taskIcon}>{task.icon}</Text>}
-                <Text style={styles.taskName}>{task.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      <View style={styles.benchArea}>
+        <Text style={styles.areaLabel}>Available ({unselectedTaskObjects.length})</Text>
+        <View style={styles.benchContent}>
+          {unselectedTaskObjects.map((task) => (
+            <TouchableOpacity
+              key={task.id}
+              style={styles.taskTag}
+              onPress={() => onTaskToggle(task.id)}
+            >
+              {task.icon && <Text style={styles.taskIcon}>{task.icon}</Text>}
+              <Text style={styles.taskName}>{task.name}</Text>
+            </TouchableOpacity>
+          ))}
+          {/* Add Custom Task Button */}
+          <TouchableOpacity
+            style={styles.taskTag}
+            onPress={onAddCustomTask}
+          >
+            <Text style={styles.addTaskText}>+</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
     </View>
   );
 };
@@ -163,6 +170,12 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     fontStyle: 'italic',
+  },
+  addTaskText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
 

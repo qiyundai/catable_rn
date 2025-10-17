@@ -46,6 +46,18 @@ const OnboardingScreen: React.FC = () => {
   const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>(['feed', 'peeing_frequency', 'poop_consistency', 'activity', 'grooming']);
   const [selectedWeeklyTasks, setSelectedWeeklyTasks] = useState<string[]>(['sleep_breathing', 'tooth_brushing', 'nail_clipping']);
   const [selectedMonthlyTasks, setSelectedMonthlyTasks] = useState<string[]>(['flea_treatment', 'internal_deworming', 'vet_visit']);
+  
+  // Custom tasks state
+  const [customTasks, setCustomTasks] = useState<{[key: string]: any[]}>({
+    daily: [],
+    weekly: [],
+    monthly: []
+  });
+  
+  // Modal states
+  const [showCustomTaskModal, setShowCustomTaskModal] = useState(false);
+  const [currentTaskCategory, setCurrentTaskCategory] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [customTaskName, setCustomTaskName] = useState('');
   const [reminderTime, setReminderTime] = useState({ hour: 9, minute: 0, period: 'AM' });
   const [catPhotos, setCatPhotos] = useState<(string | null)[]>([null]);
   const [dynamicSteps, setDynamicSteps] = useState<any[]>([]);
@@ -91,21 +103,21 @@ const OnboardingScreen: React.FC = () => {
   // Task data structure with new categorization
   const taskCategories = {
     daily: [
-      { id: 'feed', name: 'Feed', icon: '' },
-      { id: 'peeing_frequency', name: 'Peeing Frequency', icon: '' },
-      { id: 'poop_consistency', name: 'Poop Consistency', icon: '' },
-      { id: 'activity', name: 'Activity', icon: '' },
-      { id: 'grooming', name: 'Grooming', icon: '' },
+      { id: 'feed', name: 'Feed', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'peeing_frequency', name: 'Peeing Frequency', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'poop_consistency', name: 'Poop Consistency', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'activity', name: 'Activity', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'grooming', name: 'Grooming', icon: '', recurringCycle: 'daily', isCustom: false },
     ],
     weekly: [
-      { id: 'sleep_breathing', name: 'Sleep Breathing Freq', icon: '' },
-      { id: 'tooth_brushing', name: 'Tooth Brushing', icon: '' },
-      { id: 'nail_clipping', name: 'Nail Clipping', icon: '' },
+      { id: 'sleep_breathing', name: 'Sleep Breathing Freq', icon: '', recurringCycle: 'weekly', isCustom: false },
+      { id: 'tooth_brushing', name: 'Tooth Brushing', icon: '', recurringCycle: 'weekly', isCustom: false },
+      { id: 'nail_clipping', name: 'Nail Clipping', icon: '', recurringCycle: 'weekly', isCustom: false },
     ],
     monthly: [
-      { id: 'flea_treatment', name: 'Flea Treatment', icon: '' },
-      { id: 'internal_deworming', name: 'Internal Deworming', icon: '' },
-      { id: 'vet_visit', name: 'Vet Visit', icon: '' },
+      { id: 'flea_treatment', name: 'Flea Treatment', icon: '', recurringCycle: 'monthly', isCustom: false },
+      { id: 'internal_deworming', name: 'Internal Deworming', icon: '', recurringCycle: 'monthly', isCustom: false },
+      { id: 'vet_visit', name: 'Vet Visit', icon: '', recurringCycle: 'monthly', isCustom: false },
     ]
   };
 
@@ -422,6 +434,46 @@ const OnboardingScreen: React.FC = () => {
     }));
   };
 
+  // Custom task management functions
+  const openCustomTaskModal = (category: 'daily' | 'weekly' | 'monthly') => {
+    setCurrentTaskCategory(category);
+    setCustomTaskName('');
+    setShowCustomTaskModal(true);
+  };
+
+  const closeCustomTaskModal = () => {
+    setShowCustomTaskModal(false);
+    setCustomTaskName('');
+  };
+
+  const addCustomTask = () => {
+    if (customTaskName.trim()) {
+      const newTask = {
+        id: `custom_${Date.now()}`,
+        name: customTaskName.trim(),
+        icon: '',
+        recurringCycle: currentTaskCategory,
+        isCustom: true
+      };
+      
+      setCustomTasks(prev => ({
+        ...prev,
+        [currentTaskCategory]: [...prev[currentTaskCategory], newTask]
+      }));
+      
+      // Auto-select the new custom task
+      const setter = currentTaskCategory === 'daily' ? setSelectedDailyTasks :
+                    currentTaskCategory === 'weekly' ? setSelectedWeeklyTasks : setSelectedMonthlyTasks;
+      setter(prev => [...prev, newTask.id]);
+      
+      closeCustomTaskModal();
+    }
+  };
+
+  const getCombinedTasks = (category: 'daily' | 'weekly' | 'monthly') => {
+    return [...taskCategories[category], ...customTasks[category]];
+  };
+
   const addAnotherCat = () => {
     setPetForms(prev => [...prev, {
       name: '',
@@ -702,9 +754,10 @@ const OnboardingScreen: React.FC = () => {
               <Text style={styles.cardIconText}>📅</Text>
             </View>
             <TagSelector
-              tasks={taskCategories.daily}
+              tasks={getCombinedTasks('daily')}
               selectedTasks={selectedDailyTasks}
               onTaskToggle={toggleDailyTask}
+              onAddCustomTask={() => openCustomTaskModal('daily')}
               title={step.title}
               description={step.description}
             />
@@ -718,9 +771,10 @@ const OnboardingScreen: React.FC = () => {
               <Text style={styles.cardIconText}>📊</Text>
             </View>
             <TagSelector
-              tasks={taskCategories.weekly}
+              tasks={getCombinedTasks('weekly')}
               selectedTasks={selectedWeeklyTasks}
               onTaskToggle={toggleWeeklyTask}
+              onAddCustomTask={() => openCustomTaskModal('weekly')}
               title={step.title}
               description={step.description}
             />
@@ -734,9 +788,10 @@ const OnboardingScreen: React.FC = () => {
               <Text style={styles.cardIconText}>📆</Text>
             </View>
             <TagSelector
-              tasks={taskCategories.monthly}
+              tasks={getCombinedTasks('monthly')}
               selectedTasks={selectedMonthlyTasks}
               onTaskToggle={toggleMonthlyTask}
+              onAddCustomTask={() => openCustomTaskModal('monthly')}
               title={step.title}
               description={step.description}
             />
@@ -1086,6 +1141,42 @@ const OnboardingScreen: React.FC = () => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Task Modal */}
+      <Modal
+        visible={showCustomTaskModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeCustomTaskModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <TouchableOpacity onPress={closeCustomTaskModal}>
+                <Text style={styles.pickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.pickerTitle}>Add Custom Task</Text>
+              <TouchableOpacity onPress={addCustomTask}>
+                <Text style={styles.pickerSaveText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.customTaskContent}>
+              <Text style={styles.customTaskLabel}>
+                Add a custom {currentTaskCategory} task to track
+              </Text>
+              <TextInput
+                style={styles.customTaskInput}
+                placeholder="Enter task name..."
+                value={customTaskName}
+                onChangeText={setCustomTaskName}
+                autoFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={addCustomTask}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -1464,6 +1555,25 @@ const styles = StyleSheet.create({
   continueButtonText: {
     ...TYPOGRAPHY.bodyBold,
     color: COLORS.primary,
+  },
+  // Custom Task Modal Styles
+  customTaskContent: {
+    padding: SPACING.lg,
+  },
+  customTaskLabel: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  customTaskInput: {
+    ...TYPOGRAPHY.body,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    color: COLORS.text,
   },
 });
 
