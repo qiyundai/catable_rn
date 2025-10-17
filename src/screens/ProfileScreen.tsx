@@ -97,7 +97,15 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.lg,
   },
   avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: SPACING.md,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   title: {
     ...TYPOGRAPHY.h2,

@@ -103,6 +103,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
 // Import screens
 import AuthScreen from '../screens/AuthScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import ManagePetScreen from '../screens/ManagePetScreen';
 import TasksScreen from '../screens/TasksScreen';
 import CommunityScreen from '../screens/CommunityScreen';
 import PetProfilesScreen from '../screens/PetProfilesScreen';
@@ -243,6 +244,11 @@ const AppNavigator = () => {
             <Stack.Screen 
               name="Main" 
               component={MainTabNavigator}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="ManagePet" 
+              component={ManagePetScreen}
               options={{ headerShown: false }}
             />
             <Stack.Screen 

@@ -5,8 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  PanResponder,
-  Animated,
   TextInput,
   Alert,
   Image,
@@ -14,14 +12,14 @@ import {
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Picker } from '@react-native-picker/picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store';
 import { PetForm } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
-import Card from '../components/Card';
 import WheelPicker from '../components/WheelPicker';
+import TagSelector from '../components/TagSelector';
+import CardDeck from '../components/CardDeck';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.85; // 85% of screen width
@@ -33,7 +31,7 @@ const OnboardingScreen: React.FC = () => {
   const [petForms, setPetForms] = useState<PetForm[]>([{
     name: '',
     breed: '',
-    age: 1,
+    ageMonths: 12,
     gender: 'other',
     personality: '',
   }]);
@@ -41,18 +39,37 @@ const OnboardingScreen: React.FC = () => {
   const [ageMonths, setAgeMonths] = useState(12); // Default to 1 year (12 months)
   const [selectedYear, setSelectedYear] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(0);
-  const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>([]);
-  const [selectedRecurringTasks, setSelectedRecurringTasks] = useState<string[]>([]);
+  // New task selection states - initialize with all tasks selected by default
+  const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>(['feed', 'peeing_frequency', 'poop_consistency', 'activity', 'grooming']);
+  const [selectedWeeklyTasks, setSelectedWeeklyTasks] = useState<string[]>(['sleep_breathing', 'tooth_brushing', 'nail_clipping']);
+  const [selectedMonthlyTasks, setSelectedMonthlyTasks] = useState<string[]>(['flea_treatment', 'internal_deworming', 'vet_visit']);
+
+  // Custom tasks state
+  const [customTasks, setCustomTasks] = useState<{ [key: string]: any[] }>({
+    daily: [],
+    weekly: [],
+    monthly: []
+  });
+
+  // Modal states
+  const [showCustomTaskModal, setShowCustomTaskModal] = useState(false);
+  const [currentTaskCategory, setCurrentTaskCategory] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [customTaskName, setCustomTaskName] = useState('');
   const [reminderTime, setReminderTime] = useState({ hour: 9, minute: 0, period: 'AM' });
   const [catPhotos, setCatPhotos] = useState<(string | null)[]>([null]);
   const [dynamicSteps, setDynamicSteps] = useState<any[]>([]);
-  
+
   // Custom picker states
   const [showAgePicker, setShowAgePicker] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showBreedPicker, setShowBreedPicker] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
-  
+
+  // Reminder time wheel picker states
+  const [selectedHourIndex, setSelectedHourIndex] = useState(8); // 9 AM (index 8)
+  const [selectedMinuteIndex, setSelectedMinuteIndex] = useState(0); // 0 minutes
+  const [selectedPeriodIndex, setSelectedPeriodIndex] = useState(0); // AM
+
   // Temporary picker values (for cancel/save functionality)
   const [tempSelectedYear, setTempSelectedYear] = useState(1);
   const [tempSelectedMonth, setTempSelectedMonth] = useState(0);
@@ -60,13 +77,52 @@ const OnboardingScreen: React.FC = () => {
   const [tempBreed, setTempBreed] = useState('');
   const [tempPersonality, setTempPersonality] = useState('');
 
-  const { addPet, setOnboardingComplete } = useAppStore();
+  const { addPet, setOnboardingComplete, setUserTasks } = useAppStore();
+
+  // Wheel picker data arrays
+  const hourOptions = Array.from({ length: 12 }, (_, i) => ({
+    label: (i + 1).toString(),
+    value: i + 1
+  }));
+
+  const minuteOptions = [
+    { label: '00', value: 0 },
+    { label: '15', value: 15 },
+    { label: '30', value: 30 },
+    { label: '45', value: 45 }
+  ];
+
+  const periodOptions = [
+    { label: 'AM', value: 0 },
+    { label: 'PM', value: 1 }
+  ];
+
+  // Task data structure with new categorization
+  const taskCategories = {
+    daily: [
+      { id: 'feed', name: 'Feed', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'peeing_frequency', name: 'Peeing Frequency', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'poop_consistency', name: 'Poop Consistency', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'activity', name: 'Activity', icon: '', recurringCycle: 'daily', isCustom: false },
+      { id: 'grooming', name: 'Grooming', icon: '', recurringCycle: 'daily', isCustom: false },
+    ],
+    weekly: [
+      { id: 'sleep_breathing', name: 'Sleep Breathing Freq', icon: '', recurringCycle: 'weekly', isCustom: false },
+      { id: 'tooth_brushing', name: 'Tooth Brushing', icon: '', recurringCycle: 'weekly', isCustom: false },
+      { id: 'nail_clipping', name: 'Nail Clipping', icon: '', recurringCycle: 'weekly', isCustom: false },
+    ],
+    monthly: [
+      { id: 'flea_treatment', name: 'Flea Treatment', icon: '', recurringCycle: 'monthly', isCustom: false },
+      { id: 'internal_deworming', name: 'Internal Deworming', icon: '', recurringCycle: 'monthly', isCustom: false },
+      { id: 'vet_visit', name: 'Vet Visit', icon: '', recurringCycle: 'monthly', isCustom: false },
+    ]
+  };
 
   // Generate dynamic steps based on number of cats
   const generateDynamicSteps = () => {
     const baseSteps = [...ONBOARDING_STEPS];
     const dynamicSteps: any[] = [];
-    
+
     // For each cat after the first one, insert cat_name and cat_info steps
     for (let i = 1; i < petForms.length; i++) {
       dynamicSteps.push(
@@ -86,7 +142,7 @@ const OnboardingScreen: React.FC = () => {
         }
       );
     }
-    
+
     // Insert dynamic steps after the first cat_info and before add_another
     const addAnotherIndex = baseSteps.findIndex(step => step.id === 'add_another');
     const result = [
@@ -94,7 +150,7 @@ const OnboardingScreen: React.FC = () => {
       ...dynamicSteps,
       ...baseSteps.slice(addAnotherIndex)
     ];
-    
+
     return result;
   };
 
@@ -131,7 +187,7 @@ const OnboardingScreen: React.FC = () => {
     setSelectedMonth(tempSelectedMonth);
     const totalMonths = (tempSelectedYear * 12) + tempSelectedMonth;
     setAgeMonths(totalMonths);
-    updateCurrentPetForm({ age: tempSelectedYear || 1 });
+    updateCurrentPetForm({ ageMonths: totalMonths });
     setShowAgePicker(false);
   };
 
@@ -162,129 +218,82 @@ const OnboardingScreen: React.FC = () => {
     setShowPersonalityPicker(false);
   };
 
-  // Animation values for card gestures
-  const position = useRef(new Animated.ValueXY()).current;
-
-  // Animation interpolations
-  const rotate = position.x.interpolate({
-    inputRange: [-screenWidth / 2, 0, screenWidth / 2],
-    outputRange: ['-10deg', '0deg', '10deg'],
-    extrapolate: 'clamp',
-  });
-
-  const cardBackgroundColor = position.x.interpolate({
-    inputRange: [-screenWidth / 2, 0, screenWidth / 2],
-    outputRange: [COLORS.surface, COLORS.surface, COLORS.primary],
-    extrapolate: 'clamp',
-  });
-
-  // Swipe indicator animations
-  const leftIndicatorOpacity = position.x.interpolate({
-    inputRange: [-screenWidth / 2, -screenWidth / 4, 0],
-    outputRange: [1, 0.5, 0],
-    extrapolate: 'clamp',
-  });
-
-  const rightIndicatorOpacity = position.x.interpolate({
-    inputRange: [0, screenWidth / 4, screenWidth / 2],
-    outputRange: [0, 0.5, 1],
-    extrapolate: 'clamp',
-  });
-
-  const leftIndicatorScale = position.x.interpolate({
-    inputRange: [-screenWidth / 2, -screenWidth / 4, 0],
-    outputRange: [1.2, 1, 0.8],
-    extrapolate: 'clamp',
-  });
-
-  const rightIndicatorScale = position.x.interpolate({
-    inputRange: [0, screenWidth / 4, screenWidth / 2],
-    outputRange: [0.8, 1, 1.2],
-    extrapolate: 'clamp',
-  });
-
-  // Pan responder for swipe gestures
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
-    },
-    onPanResponderMove: (_, gestureState) => {
-      position.setValue({ x: gestureState.dx, y: gestureState.dy });
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dx > 120) {
-        // Swipe right - next/complete
-        handleNext();
-      } else if (gestureState.dx < -120) {
-        // Swipe left - skip
-        handleSkip();
-      } else {
-        // Return to center
-        Animated.spring(position, {
-          toValue: { x: 0, y: 0 },
-          useNativeDriver: false,
-        }).start();
-      }
-    },
-  });
 
   const handleNext = () => {
     if (currentCardIndex < allSteps.length - 1) {
-      nextCard('right');
-    } else {
-      // Complete onboarding - save all cats
-      petForms.forEach((petForm, index) => {
-        if (petForm.name) {
-          const newPet: any = {
-            id: Date.now().toString() + index,
-            userId: '1',
-            ...petForm,
-            avatar: catPhotos[index] || undefined,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-          addPet(newPet);
-        }
-      });
-      setOnboardingComplete(true);
+      setCurrentCardIndex(prev => prev + 1);
     }
+    // If it's the last card, don't increment - let CardDeck handle completion
   };
 
   const handleSkip = () => {
-    if (currentCardIndex < allSteps.length - 1) {
-      nextCard('left');
+    const skipTargetIndex = getSkipTargetIndex(currentCardIndex);
+    
+    if (skipTargetIndex < allSteps.length) {
+      // Jump to the skip target
+      setCurrentCardIndex(skipTargetIndex);
     } else {
+      // Complete onboarding if we've reached the end
       setOnboardingComplete(true);
     }
   };
 
-  const nextCard = (direction: 'left' | 'right') => {
-    const exitX = direction === 'right' ? screenWidth : -screenWidth;
-    
-    Animated.timing(position, {
-      toValue: { x: exitX, y: 0 },
-      duration: 300,
-      useNativeDriver: false,
-    }).start(() => {
-      setCurrentCardIndex(prev => prev + 1);
-      position.setValue({ x: 0, y: 0 });
+  const handleComplete = () => {
+    // Complete onboarding - save all cats
+    petForms.forEach((petForm, index) => {
+      if (petForm.name) {
+        const newPet: any = {
+          id: Date.now().toString() + index,
+          userId: '1',
+          ...petForm,
+          avatar: catPhotos[index] || undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        addPet(newPet);
+      }
     });
+
+    // Save user's selected tasks
+    const userTasks = {
+      daily: getCombinedTasks('daily').filter(task => selectedDailyTasks.includes(task.id)),
+      weekly: getCombinedTasks('weekly').filter(task => selectedWeeklyTasks.includes(task.id)),
+      monthly: getCombinedTasks('monthly').filter(task => selectedMonthlyTasks.includes(task.id)),
+      customTasks: customTasks,
+      reminderTime: {
+        ...reminderTime,
+        period: reminderTime.period as 'AM' | 'PM',
+      },
+    };
+    setUserTasks(userTasks);
+
+    // Mark onboarding as complete by setting index beyond the array
+    setCurrentCardIndex(allSteps.length);
+    setOnboardingComplete(true);
   };
 
-  // Interactive input handlers
-  const toggleDailyTask = (task: string) => {
-    setSelectedDailyTasks(prev => 
-      prev.includes(task) 
-        ? prev.filter(t => t !== task)
-        : [...prev, task]
+  // Interactive input handlers for new task structure
+  const toggleDailyTask = (taskId: string) => {
+    setSelectedDailyTasks(prev =>
+      prev.includes(taskId)
+        ? prev.filter(t => t !== taskId)
+        : [...prev, taskId]
     );
   };
 
-  const toggleRecurringTask = (task: string) => {
-    setSelectedRecurringTasks(prev => 
-      prev.includes(task) 
-        ? prev.filter(t => t !== task)
-        : [...prev, task]
+  const toggleWeeklyTask = (taskId: string) => {
+    setSelectedWeeklyTasks(prev =>
+      prev.includes(taskId)
+        ? prev.filter(t => t !== taskId)
+        : [...prev, taskId]
+    );
+  };
+
+  const toggleMonthlyTask = (taskId: string) => {
+    setSelectedMonthlyTasks(prev =>
+      prev.includes(taskId)
+        ? prev.filter(t => t !== taskId)
+        : [...prev, taskId]
     );
   };
 
@@ -342,17 +351,114 @@ const OnboardingScreen: React.FC = () => {
     }));
   };
 
+  // Wheel picker handlers for reminder time
+  const handleHourChange = (index: number) => {
+    setSelectedHourIndex(index);
+    setReminderTime(prev => ({
+      ...prev,
+      hour: hourOptions[index].value
+    }));
+  };
+
+  const handleMinuteChange = (index: number) => {
+    setSelectedMinuteIndex(index);
+    setReminderTime(prev => ({
+      ...prev,
+      minute: minuteOptions[index].value
+    }));
+  };
+
+  const handlePeriodChange = (index: number) => {
+    setSelectedPeriodIndex(index);
+    setReminderTime(prev => ({
+      ...prev,
+      period: periodOptions[index].value === 0 ? 'AM' : 'PM'
+    }));
+  };
+
+  // Custom task management functions
+  const openCustomTaskModal = (category: 'daily' | 'weekly' | 'monthly') => {
+    setCurrentTaskCategory(category);
+    setCustomTaskName('');
+    setShowCustomTaskModal(true);
+  };
+
+  const closeCustomTaskModal = () => {
+    setShowCustomTaskModal(false);
+    setCustomTaskName('');
+  };
+
+  const addCustomTask = () => {
+    if (customTaskName.trim()) {
+      const newTask = {
+        id: `custom_${Date.now()}`,
+        name: customTaskName.trim(),
+        icon: '',
+        recurringCycle: currentTaskCategory,
+        isCustom: true
+      };
+
+      setCustomTasks(prev => ({
+        ...prev,
+        [currentTaskCategory]: [...prev[currentTaskCategory], newTask]
+      }));
+
+      // Auto-select the new custom task
+      const setter = currentTaskCategory === 'daily' ? setSelectedDailyTasks :
+        currentTaskCategory === 'weekly' ? setSelectedWeeklyTasks : setSelectedMonthlyTasks;
+      setter(prev => [...prev, newTask.id]);
+
+      closeCustomTaskModal();
+    }
+  };
+
+  const getCombinedTasks = (category: 'daily' | 'weekly' | 'monthly') => {
+    return [...taskCategories[category], ...customTasks[category]];
+  };
+
+  // Smart skip logic system
+  const getNextFlowControlIndex = (currentIndex: number): number => {
+    for (let i = currentIndex + 1; i < allSteps.length; i++) {
+      if (allSteps[i].type === 'flow_control') {
+        return i;
+      }
+    }
+    return allSteps.length - 1; // If no flow control found, go to last step
+  };
+
+  const getSkipTargetIndex = (currentIndex: number): number => {
+    const currentStep = allSteps[currentIndex];
+
+    switch (currentStep.skipBehavior) {
+      case 'skip_to_next_flow_control':
+        return getNextFlowControlIndex(currentIndex);
+      case 'next':
+      default:
+        return currentIndex + 1;
+    }
+  };
+
+  const shouldShowSkipButton = (currentIndex: number): boolean => {
+    const currentStep = allSteps[currentIndex];
+    return currentStep.type === 'flow_control' || currentStep.skipBehavior !== 'next';
+  };
+
   const addAnotherCat = () => {
-    setPetForms(prev => [...prev, {
-      name: '',
-      breed: '',
-      age: 1,
-      gender: 'other',
-      personality: '',
-    }]);
+    setPetForms(prev => [
+      ...prev,
+      {
+        name: '',
+        breed: '',
+        age: 1,
+        ageMonths: 0,
+        gender: 'other',
+        personality: '',
+      }
+    ]);
     setCatPhotos(prev => [...prev, null]);
     // The dynamic steps will be regenerated automatically
   };
+
 
   const getCurrentPetForm = () => {
     const currentStep = allSteps[currentCardIndex];
@@ -363,7 +469,7 @@ const OnboardingScreen: React.FC = () => {
   const updateCurrentPetForm = (updates: Partial<PetForm>) => {
     const currentStep = allSteps[currentCardIndex];
     const catIndex = currentStep?.catIndex || 0;
-    setPetForms(prev => prev.map((form, index) => 
+    setPetForms(prev => prev.map((form, index) =>
       index === catIndex ? { ...form, ...updates } : form
     ));
   };
@@ -377,7 +483,7 @@ const OnboardingScreen: React.FC = () => {
   const setCurrentCatPhoto = (photo: string | null) => {
     const currentStep = allSteps[currentCardIndex];
     const catIndex = currentStep?.catIndex || 0;
-    setCatPhotos(prev => prev.map((p, index) => 
+    setCatPhotos(prev => prev.map((p, index) =>
       index === catIndex ? photo : p
     ));
   };
@@ -400,13 +506,13 @@ const OnboardingScreen: React.FC = () => {
         'Choose how you want to add a photo',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Camera', 
-            onPress: () => openCamera() 
+          {
+            text: 'Camera',
+            onPress: () => openCamera()
           },
-          { 
-            text: 'Photo Library', 
-            onPress: () => openImageLibrary() 
+          {
+            text: 'Photo Library',
+            onPress: () => openImageLibrary()
           },
         ]
       );
@@ -464,7 +570,7 @@ const OnboardingScreen: React.FC = () => {
   const renderCardContent = (step: any) => {
     const currentPetForm = getCurrentPetForm();
     const currentCatPhoto = getCurrentCatPhoto();
-    
+
     switch (step.id) {
       case 'welcome':
         return (
@@ -504,8 +610,8 @@ const OnboardingScreen: React.FC = () => {
                 <Image source={{ uri: currentCatPhoto }} style={styles.avatarImage} />
               ) : (
                 <>
-              <Text style={styles.avatarEmoji}>📷</Text>
-              <Text style={styles.avatarText}>Add Photo</Text>
+                  <Text style={styles.avatarEmoji}>📷</Text>
+                  <Text style={styles.avatarText}>Add Photo</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -526,7 +632,7 @@ const OnboardingScreen: React.FC = () => {
             <View style={styles.infoColumn}>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Age</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.inputField}
                   onPress={openAgePicker}
                 >
@@ -536,10 +642,10 @@ const OnboardingScreen: React.FC = () => {
                   </View>
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Gender</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.inputField}
                   onPress={openGenderPicker}
                 >
@@ -549,10 +655,10 @@ const OnboardingScreen: React.FC = () => {
                   </View>
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Breed</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.inputField}
                   onPress={openBreedPicker}
                 >
@@ -562,10 +668,10 @@ const OnboardingScreen: React.FC = () => {
                   </View>
                 </TouchableOpacity>
               </View>
-              
+
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Personality</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.inputField}
                   onPress={openPersonalityPicker}
                 >
@@ -588,13 +694,13 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
             <View style={styles.buttonContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.addButton]}
                 onPress={addAnotherCat}
               >
                 <Text style={styles.addButtonText}>Add Another Cat</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, styles.continueButton]}
                 onPress={handleNext}
               >
@@ -621,57 +727,48 @@ const OnboardingScreen: React.FC = () => {
             <View style={styles.cardIcon}>
               <Text style={styles.cardIconText}>📅</Text>
             </View>
-            <Text style={styles.cardTitle}>{step.title}</Text>
-            <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.taskList}>
-              {['Water intake', 'Feeding', 'Playtime activity', 'Poop consistency', 'Litter'].map((task) => (
-                <TouchableOpacity 
-                  key={task} 
-                  style={styles.taskItem}
-                  onPress={() => toggleDailyTask(task)}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    selectedDailyTasks.includes(task) && styles.checkboxSelected
-                  ]}>
-                    {selectedDailyTasks.includes(task) && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.taskText}>{task}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TagSelector
+              tasks={getCombinedTasks('daily')}
+              selectedTasks={selectedDailyTasks}
+              onTaskToggle={toggleDailyTask}
+              onAddCustomTask={() => openCustomTaskModal('daily')}
+              title={step.title}
+              description={step.description}
+            />
           </View>
         );
 
-      case 'recurring_tasks':
+      case 'weekly_tasks':
         return (
           <View style={styles.cardContent}>
             <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>🔄</Text>
+              <Text style={styles.cardIconText}>📊</Text>
             </View>
-            <Text style={styles.cardTitle}>{step.title}</Text>
-            <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.taskList}>
-              {['Grooming', 'Tooth brushing', 'Nail clipping', 'Flea treatment', 'Showering', 'Internal deworming', 'Vet check-up'].map((task) => (
-                <TouchableOpacity 
-                  key={task} 
-                  style={styles.taskItem}
-                  onPress={() => toggleRecurringTask(task)}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    selectedRecurringTasks.includes(task) && styles.checkboxSelected
-                  ]}>
-                    {selectedRecurringTasks.includes(task) && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.taskText}>{task}</Text>
-                </TouchableOpacity>
-              ))}
+            <TagSelector
+              tasks={getCombinedTasks('weekly')}
+              selectedTasks={selectedWeeklyTasks}
+              onTaskToggle={toggleWeeklyTask}
+              onAddCustomTask={() => openCustomTaskModal('weekly')}
+              title={step.title}
+              description={step.description}
+            />
+          </View>
+        );
+
+      case 'monthly_tasks':
+        return (
+          <View style={styles.cardContent}>
+            <View style={styles.cardIcon}>
+              <Text style={styles.cardIconText}>📆</Text>
             </View>
+            <TagSelector
+              tasks={getCombinedTasks('monthly')}
+              selectedTasks={selectedMonthlyTasks}
+              onTaskToggle={toggleMonthlyTask}
+              onAddCustomTask={() => openCustomTaskModal('monthly')}
+              title={step.title}
+              description={step.description}
+            />
           </View>
         );
 
@@ -683,29 +780,31 @@ const OnboardingScreen: React.FC = () => {
             </View>
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.timePicker}>
-              <TouchableOpacity 
-                style={styles.timeColumn}
-                onPress={() => showHourPicker()}
-              >
-                <Text style={styles.timeLabel}>Hour</Text>
-                <Text style={styles.timeValue}>{reminderTime.hour}</Text>
-              </TouchableOpacity>
-              <Text style={styles.timeSeparator}>:</Text>
-              <TouchableOpacity 
-                style={styles.timeColumn}
-                onPress={() => showMinutePicker()}
-              >
-                <Text style={styles.timeLabel}>Minute</Text>
-                <Text style={styles.timeValue}>{reminderTime.minute.toString().padStart(2, '0')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.timeColumn}
-                onPress={() => togglePeriod()}
-              >
-                <Text style={styles.timeLabel}>Period</Text>
-                <Text style={styles.timeValue}>{reminderTime.period}</Text>
-              </TouchableOpacity>
+            <View style={styles.timePickerWheel}>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Hour</Text>
+                <WheelPicker
+                  items={hourOptions}
+                  selectedIndex={selectedHourIndex}
+                  onSelectionChange={handleHourChange}
+                />
+              </View>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Minute</Text>
+                <WheelPicker
+                  items={minuteOptions}
+                  selectedIndex={selectedMinuteIndex}
+                  onSelectionChange={handleMinuteChange}
+                />
+              </View>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Period</Text>
+                <WheelPicker
+                  items={periodOptions}
+                  selectedIndex={selectedPeriodIndex}
+                  onSelectionChange={handlePeriodChange}
+                />
+              </View>
             </View>
           </View>
         );
@@ -715,41 +814,8 @@ const OnboardingScreen: React.FC = () => {
     }
   };
 
-  const renderCard = (step: any, index: number, relativeIndex: number) => {
-    const isTopCard = relativeIndex === 0;
-    
-    // Calculate scale for inactive cards
-    const scaleFactor = isTopCard ? 1 : Math.max(0.95 - (relativeIndex * 0.03), 0.7);
-
-    const cardStyle = [
-      styles.card,
-      isTopCard && styles.topCard,
-    ];
-
-    return (
-      <Animated.View
-        key={step.id}
-        style={[
-          cardStyle,
-          {
-            bottom: isTopCard ? 160 : 175 + (relativeIndex * 25),
-            zIndex: isTopCard ? 10 : 10 - relativeIndex,
-            transform: [
-              { translateX: isTopCard ? position.x : 0 },
-              { translateY: isTopCard ? position.y : 0 },
-              { rotate: isTopCard ? rotate : '0deg' },
-              { scale: scaleFactor },
-            ],
-          },
-          isTopCard && {
-            backgroundColor: cardBackgroundColor,
-          },
-        ]}
-        {...(isTopCard ? panResponder.panHandlers : {})}
-      >
-        {renderCardContent(step)}
-      </Animated.View>
-    );
+  const renderCardForDeck = (step: any, index: number, relativeIndex: number, isTopCard: boolean) => {
+    return renderCardContent(step);
   };
 
   // Check if onboarding is complete
@@ -759,13 +825,13 @@ const OnboardingScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
-        <ProgressBar 
-          current={currentCardIndex + 1} 
+        <ProgressBar
+          current={currentCardIndex + 1}
           total={allSteps.length}
           showText={true}
           height={16}
-          />
-        </View>
+        />
+      </View>
 
       {/* Card Deck */}
       <View style={styles.cardDeck}>
@@ -781,42 +847,17 @@ const OnboardingScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          <>
-            {/* Swipe Indicators */}
-            <Animated.View 
-              style={[
-                styles.swipeIndicator,
-                styles.leftIndicator,
-                {
-                  opacity: leftIndicatorOpacity,
-                  transform: [{ scale: leftIndicatorScale }],
-                }
-              ]}
-            >
-              <Text style={styles.leftIndicatorText}>SKIP</Text>
-            </Animated.View>
-            
-            <Animated.View 
-              style={[
-                styles.swipeIndicator,
-                styles.rightIndicator,
-                {
-                  opacity: rightIndicatorOpacity,
-                  transform: [{ scale: rightIndicatorScale }],
-                }
-              ]}
-            >
-              <Text style={styles.rightIndicatorText}>
-                {currentCardIndex === allSteps.length - 1 ? 'START' : 'NEXT'}
-        </Text>
-            </Animated.View>
-
-            {allSteps
-              .map((step, index) => ({ step, index }))
-              .filter(({ index }) => index >= currentCardIndex)
-              .slice(0, 3) // Only show next 2 cards (3 cards total: active + 2 behind)
-              .map(({ step, index }, relativeIndex) => renderCard(step, index, relativeIndex))}
-          </>
+          <CardDeck
+            items={allSteps}
+            currentIndex={currentCardIndex}
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onComplete={handleComplete}
+            renderCard={renderCardForDeck}
+            cardWidth={CARD_WIDTH}
+            cardHeight={CARD_HEIGHT}
+            maxVisibleCards={3}
+          />
         )}
       </View>
 
@@ -828,10 +869,10 @@ const OnboardingScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={cancelAgePicker}
       >
-        <View 
+        <View
           style={styles.modalOverlay}
         >
-          <View 
+          <View
             style={styles.pickerContainer}
           >
             <View style={styles.pickerHeader}>
@@ -852,7 +893,7 @@ const OnboardingScreen: React.FC = () => {
                   onSelectionChange={setTempSelectedYear}
                 />
               </View>
-              
+
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Months</Text>
                 <WheelPicker
@@ -873,10 +914,10 @@ const OnboardingScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={cancelGenderPicker}
       >
-        <View 
+        <View
           style={styles.modalOverlay}
         >
-          <View 
+          <View
             style={styles.pickerContainer}
           >
             <View style={styles.pickerHeader}>
@@ -889,11 +930,7 @@ const OnboardingScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {[
-                { label: 'Male', value: 'male' },
-                { label: 'Female', value: 'female' },
-                { label: 'Other', value: 'other' }
-              ].map(option => (
+              {PET_GENDER_OPTIONS.map(option => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
@@ -925,10 +962,10 @@ const OnboardingScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={cancelBreedPicker}
       >
-        <View 
+        <View
           style={styles.modalOverlay}
         >
-          <View 
+          <View
             style={styles.pickerContainer}
           >
             <View style={styles.pickerHeader}>
@@ -941,25 +978,22 @@ const OnboardingScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {[
-                'Mixed', 'Persian', 'Maine Coon', 'Siamese', 'British Shorthair',
-                'Ragdoll', 'American Shorthair', 'Scottish Fold', 'Other'
-              ].map(breed => (
+              {PET_BREED_OPTIONS.map(breed => (
                 <TouchableOpacity
-                  key={breed}
+                  key={breed.value}
                   style={[
                     styles.optionItem,
-                    tempBreed === breed && styles.optionItemSelected
+                    tempBreed === breed.value && styles.optionItemSelected
                   ]}
-                  onPress={() => setTempBreed(breed)}
+                  onPress={() => setTempBreed(breed.value)}
                 >
                   <Text style={[
                     styles.optionText,
-                    tempBreed === breed && styles.optionTextSelected
+                    tempBreed === breed.value && styles.optionTextSelected
                   ]}>
-                    {breed}
+                    {breed.label}
                   </Text>
-                  {tempBreed === breed && (
+                  {tempBreed === breed.value && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
                 </TouchableOpacity>
@@ -976,10 +1010,10 @@ const OnboardingScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={cancelPersonalityPicker}
       >
-        <View 
+        <View
           style={styles.modalOverlay}
         >
-          <View 
+          <View
             style={styles.pickerContainer}
           >
             <View style={styles.pickerHeader}>
@@ -989,33 +1023,66 @@ const OnboardingScreen: React.FC = () => {
               <Text style={styles.pickerTitle}>Select Personality</Text>
               <TouchableOpacity onPress={savePersonalityPicker}>
                 <Text style={styles.pickerSaveText}>Save</Text>
-        </TouchableOpacity>
+              </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {[
-                'Playful', 'Calm', 'Energetic', 'Independent', 
-                'Affectionate', 'Curious', 'Shy', 'Social'
-              ].map(personality => (
+              {PET_PERSONALITY_OPTIONS.map(personality => (
                 <TouchableOpacity
-                  key={personality}
+                  key={personality.value}
                   style={[
                     styles.optionItem,
-                    tempPersonality === personality && styles.optionItemSelected
+                    tempPersonality === personality.value && styles.optionItemSelected
                   ]}
-                  onPress={() => setTempPersonality(personality)}
+                  onPress={() => setTempPersonality(personality.value)}
                 >
                   <Text style={[
                     styles.optionText,
-                    tempPersonality === personality && styles.optionTextSelected
+                    tempPersonality === personality.value && styles.optionTextSelected
                   ]}>
-                    {personality}
-          </Text>
-                  {tempPersonality === personality && (
+                    {personality.label}
+                  </Text>
+                  {tempPersonality === personality.value && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Custom Task Modal */}
+      <Modal
+        visible={showCustomTaskModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeCustomTaskModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <TouchableOpacity onPress={closeCustomTaskModal}>
+                <Text style={styles.pickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.pickerTitle}>Add Custom Task</Text>
+              <TouchableOpacity onPress={addCustomTask}>
+                <Text style={styles.pickerSaveText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.customTaskContent}>
+              <Text style={styles.customTaskLabel}>
+                Add a custom {currentTaskCategory} task to track
+              </Text>
+              <TextInput
+                style={styles.customTaskInput}
+                placeholder="Enter task name..."
+                value={customTaskName}
+                onChangeText={setCustomTaskName}
+                autoFocus={true}
+                returnKeyType="done"
+                onSubmitEditing={addCustomTask}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -1038,15 +1105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     padding: SPACING.lg,
     position: 'relative',
-  },
-  swipeIndicator: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -30,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    borderRadius: 20,
-    zIndex: 11,
   },
   leftIndicator: {
     left: SPACING.lg,
@@ -1166,7 +1224,7 @@ const styles = StyleSheet.create({
   avatarPlaceholder: {
     width: 100,
     height: 100,
-    borderRadius: 50,
+    borderRadius: 12,
     backgroundColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1185,7 +1243,7 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 12,
   },
   infoColumn: {
     width: '100%',
@@ -1276,6 +1334,13 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h2,
     color: COLORS.text,
     marginHorizontal: SPACING.sm,
+  },
+  timePickerWheel: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   // Custom Picker Styles
   modalOverlay: {
@@ -1387,6 +1452,25 @@ const styles = StyleSheet.create({
   continueButtonText: {
     ...TYPOGRAPHY.bodyBold,
     color: COLORS.primary,
+  },
+  // Custom Task Modal Styles
+  customTaskContent: {
+    padding: SPACING.lg,
+  },
+  customTaskLabel: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  customTaskInput: {
+    ...TYPOGRAPHY.body,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    color: COLORS.text,
   },
 });
 

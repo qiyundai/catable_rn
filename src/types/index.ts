@@ -17,7 +17,7 @@ export interface Pet {
   name: string;
   avatar?: string;
   breed: string;
-  age: number;
+  ageMonths: number; // Age in months for more precise tracking
   gender: 'male' | 'female' | 'other';
   personality: string;
   createdAt: Date;
@@ -97,6 +97,7 @@ export type RootStackParamList = {
   Auth: undefined;
   Onboarding: undefined;
   Main: undefined;
+  ManagePet: { petId?: string };
   PetProfile: { petId: string };
   Logging: { petId: string; logTypeId: string };
   Settings: undefined;
@@ -125,10 +126,31 @@ export interface RegisterForm {
 export interface PetForm {
   name: string;
   breed: string;
-  age: number;
+  ageMonths: number;
   gender: 'male' | 'female' | 'other';
   personality: string;
   avatar?: string;
+}
+
+// User task selection types
+export interface UserTask {
+  id: string;
+  name: string;
+  icon: string;
+  recurringCycle: 'daily' | 'weekly' | 'monthly';
+  isCustom: boolean;
+}
+
+export interface UserTasks {
+  daily: UserTask[];
+  weekly: UserTask[];
+  monthly: UserTask[];
+  customTasks: { [key: string]: UserTask[] };
+  reminderTime: {
+    hour: number;
+    minute: number;
+    period: 'AM' | 'PM';
+  };
 }
 
 // UI State types
@@ -139,6 +161,8 @@ export interface AppState {
   isOnboardingComplete: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
+  userTasks: UserTasks | null;
+  streaks: { [petId: string]: Streak };
 }
 
 // Logging input types

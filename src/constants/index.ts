@@ -24,7 +24,35 @@ export const COLORS = {
   disabled: '#BDC3C7',
   progress: '#FF9633',
   black: '#000000',
+  gray: '#F5F5F5',
   darkInk: '#1E232C',
+};
+
+export const SHADOWS = {
+  small: {
+    elevation: 2,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  medium: {
+    elevation: 4,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  large: {
+    elevation: 8,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+};
+
+export const BORDER_RADIUS = {
+  small: 4,
+  medium: 8,
+  large: 16,
 };
 
 export const SPACING = {
@@ -231,49 +259,102 @@ export const ONBOARDING_STEPS = [
     title: "Let's get started!",
     description: 'Setting up your cat\'s profile',
     component: 'Welcome',
+    type: 'flow_control',
+    skipBehavior: 'skip_to_next_flow_control',
   },
   {
     id: 'cat_name',
     title: 'What\'s your cat\'s name?',
     description: 'Add a name and photo for your cat',
     component: 'CatName',
+    type: 'data_collection',
+    skipBehavior: 'next',
   },
   {
     id: 'cat_info',
     title: 'Basic Information',
     description: 'Tell us about your cat',
     component: 'CatInfo',
+    type: 'data_collection',
+    skipBehavior: 'next',
   },
   {
     id: 'add_another',
     title: 'Add Another Cat?',
     description: 'You can always add more cats later',
     component: 'AddAnother',
+    type: 'flow_control',
+    skipBehavior: 'next',
   },
   {
     id: 'logging_goals',
     title: 'Set Logging Goals',
     description: 'Choose what you\'d like to track',
     component: 'LoggingGoals',
+    type: 'flow_control',
+    skipBehavior: 'skip_to_next_flow_control',
   },
   {
     id: 'daily_tasks',
     title: 'Daily Tasks',
     description: 'Select daily activities to track',
     component: 'DailyTasks',
+    type: 'data_collection',
+    skipBehavior: 'next',
   },
   {
-    id: 'recurring_tasks',
-    title: 'Recurring Tasks',
-    description: 'Choose recurring activities',
-    component: 'RecurringTasks',
+    id: 'weekly_tasks',
+    title: 'Weekly Tasks',
+    description: 'Choose weekly activities to track',
+    component: 'WeeklyTasks',
+    type: 'data_collection',
+    skipBehavior: 'next',
+  },
+  {
+    id: 'monthly_tasks',
+    title: 'Monthly Tasks',
+    description: 'Select monthly or less frequent activities',
+    component: 'MonthlyTasks',
+    type: 'data_collection',
+    skipBehavior: 'next',
   },
   {
     id: 'reminder_time',
     title: 'Reminder Time',
     description: 'When would you like daily reminders?',
     component: 'ReminderTime',
+    type: 'data_collection',
+    skipBehavior: 'next',
   },
+];
+
+export const PET_GENDER_OPTIONS = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Other', value: 'other' },
+];
+
+export const PET_BREED_OPTIONS = [
+  { label: 'Mixed', value: 'Mixed' },
+  { label: 'Persian', value: 'Persian' },
+  { label: 'Maine Coon', value: 'Maine Coon' },
+  { label: 'Siamese', value: 'Siamese' },
+  { label: 'British Shorthair', value: 'British Shorthair' },
+  { label: 'Ragdoll', value: 'Ragdoll' },
+  { label: 'American Shorthair', value: 'American Shorthair' },
+  { label: 'Scottish Fold', value: 'Scottish Fold' },
+  { label: 'Other', value: 'Other' },
+];
+
+export const PET_PERSONALITY_OPTIONS = [
+  { label: 'Playful', value: 'Playful' },
+  { label: 'Calm', value: 'Calm' },
+  { label: 'Energetic', value: 'Energetic' },
+  { label: 'Independent', value: 'Independent' },
+  { label: 'Affectionate', value: 'Affectionate' },
+  { label: 'Curious', value: 'Curious' },
+  { label: 'Shy', value: 'Shy' },
+  { label: 'Social', value: 'Social' },
 ];
 
 export const SOCIAL_LOGIN_PROVIDERS = [

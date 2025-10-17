@@ -1,23 +1,86 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   FlatList,
   Image,
+  LayoutAnimation,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
 import { useAppStore } from '../store';
 import { Pet } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, BORDER_RADIUS } from '../constants';
+
+type PetProfilesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const PetProfilesScreen: React.FC = () => {
   const { pets, currentPet, setCurrentPet } = useAppStore();
+  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const navigation = useNavigation<PetProfilesScreenNavigationProp>();
+
+  const formatAge = (pet: Pet) => {
+    // Handle both old format (age) and new format (ageMonths)
+    let months: number;
+    if (pet.ageMonths !== undefined) {
+      months = pet.ageMonths;
+    } else {
+      return 'Unknown age';
+    }
+
+    if (isNaN(months) || months < 0) {
+      return 'Unknown age';
+    }
+
+    if (months < 12) {
+      return `${months} month${months !== 1 ? 's' : ''}`;
+    } else if (months === 12) {
+      return '1 year';
+    } else {
+      const years = Math.floor(months / 12);
+      const remainingMonths = months % 12;
+      if (remainingMonths === 0) {
+        return `${years} year${years !== 1 ? 's' : ''}`;
+      } else {
+        return `${years} year${years !== 1 ? 's' : ''} ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
+      }
+    }
+  };
+
+  // Generate mock monthly data for the pet
+  const generateMonthlyData = (petId: string) => {
+    // In a real app, this would come from the database
+    return {
+      'Feeding': '28/30 days',
+      'Peeing Frequency': '4.2 times/day',
+      'Poop Consistency': 'Normal (85%)',
+      'Activity': 'Moderate (3.1/5)',
+      'Grooming': '6 times',
+      'Sleep Breathing Frequency': '2 times',
+      'Last Nail Clipping': '2 weeks ago',
+      'Last Flea Treatment': '3 weeks ago',
+      'Last Internal Deworming': '1 month ago',
+      'Last Vet Visit': '2 months ago',
+    };
+  };
+
+  const toggleExpanded = (petId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedCardId(expandedCardId === petId ? null : petId);
+  };
+
+  const handleExportReport = () => {
+    // TODO: Implement export functionality
+    console.log('Export report functionality not implemented yet');
+  };
 
   const renderPetCard = ({ item }: { item: Pet }) => {
     const isCurrentPet = currentPet?.id === item.id;
+    const isExpanded = expandedCardId === item.id;
+    const monthlyData = generateMonthlyData(item.id);
     
     return (
       <TouchableOpacity 
@@ -27,38 +90,86 @@ const PetProfilesScreen: React.FC = () => {
         ]}
         onPress={() => setCurrentPet(item)}
       >
-        <View style={styles.petAvatar}>
-          {item.avatar ? (
-            <Image source={{ uri: item.avatar }} style={styles.avatarImage} />
-          ) : (
-            <Text style={styles.avatarEmoji}>🐱</Text>
-          )}
-        </View>
-        
-        <View style={styles.petInfo}>
-          <Text style={[
-            styles.petName,
-            isCurrentPet && styles.currentPetName
-          ]}>
-            {item.name}
-          </Text>
-          <Text style={styles.petBreed}>{item.breed}</Text>
-          <Text style={styles.petAge}>{item.age} years old</Text>
-          <Text style={styles.petGender}>
-            {item.gender === 'male' ? '♂' : item.gender === 'female' ? '♀' : '⚧'} {item.gender}
-          </Text>
+        <View style={styles.petCardContent}>
+          <View style={styles.petAvatar}>
+            {item.avatar ? (
+              <Image source={{ uri: item.avatar }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarEmoji}>🐱</Text>
+            )}
+          </View>
+          
+          <View style={styles.petInfo}>
+            <Text style={[
+              styles.petName,
+              isCurrentPet && styles.currentPetName
+            ]}>
+              {item.name} {item.gender === 'male' ? '♂' : item.gender === 'female' ? '♀' : '⚧'}
+            </Text>
+             <Text style={styles.petAge}>🗓️ {formatAge(item)}</Text>
+            <Text style={styles.petBreed}>🐈‍⬛ {item.breed}</Text>
+          </View>
         </View>
 
-        <View style={styles.petStats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>7</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>42</Text>
-            <Text style={styles.statLabel}>Total Logs</Text>
-          </View>
+        <View style={styles.petCardActions}>
+          {!isExpanded ? (
+            <>
+              <TouchableOpacity 
+                style={styles.petCardActionButton}
+                onPress={() => toggleExpanded(item.id)}
+              >
+                <Text style={styles.petCardActionButtonText}>More Info</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.petCardActionButton}
+                onPress={() => navigation.getParent()?.navigate('ManagePet', { petId: item.id })}
+              >
+                <Text style={styles.petCardActionButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity 
+                style={styles.petCardActionButton}
+                onPress={() => toggleExpanded(item.id)}
+              >
+                <Text style={styles.petCardActionButtonText}>Less Info</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.petCardActionButton}
+                onPress={() => navigation.getParent()?.navigate('ManagePet', { petId: item.id })}
+              >
+                <Text style={styles.petCardActionButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
+
+        {isExpanded && (
+          <View style={styles.expandedContent}>
+            <View style={styles.dataTable}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderText}>Category</Text>
+                <Text style={styles.tableHeaderText}>Monthly Data/Average</Text>
+              </View>
+              {Object.entries(monthlyData).map(([category, value], index) => (
+                <View key={category} style={[
+                  styles.tableRow,
+                  index % 2 === 0 && styles.tableRowEven
+                ]}>
+                  <Text style={styles.tableCategoryText}>{category}</Text>
+                  <Text style={styles.tableValueText}>{value}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity 
+              style={styles.exportButton}
+              onPress={handleExportReport}
+            >
+              <Text style={styles.exportButtonText}>Export Report</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {isCurrentPet && (
           <View style={styles.currentBadge}>
@@ -70,17 +181,14 @@ const PetProfilesScreen: React.FC = () => {
   };
 
   const handleAddPet = () => {
-    // Navigate to add pet screen
-    console.log('Add new pet');
+    // Navigate to manage pet screen
+    navigation.getParent()?.navigate('ManagePet');
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>My Cats</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddPet}>
-          <Text style={styles.addButtonText}>+ Add Cat</Text>
-        </TouchableOpacity>
       </View>
 
       {pets.length === 0 ? (
@@ -95,36 +203,17 @@ const PetProfilesScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={pets}
-          renderItem={renderPetCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      {/* Quick Stats Summary */}
-      {pets.length > 0 && (
-        <View style={styles.summaryContainer}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{pets.length}</Text>
-            <Text style={styles.summaryLabel}>Cats</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>
-              {pets.reduce((total, pet) => total + 7, 0)}
-            </Text>
-            <Text style={styles.summaryLabel}>Total Streak Days</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>
-              {pets.reduce((total, pet) => total + 42, 0)}
-            </Text>
-            <Text style={styles.summaryLabel}>Total Logs</Text>
-          </View>
+        <View style={styles.contentContainer}>
+          <FlatList
+            data={pets}
+            renderItem={renderPetCard}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+          />
+          <TouchableOpacity style={styles.addCatButton} onPress={handleAddPet}>
+            <Text style={styles.addCatButtonText}>+</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -132,6 +221,96 @@ const PetProfilesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  petCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: SPACING.md,
+  },
+  petCardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    gap: SPACING.md,
+  },
+  petCardActionButton: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.small,
+    backgroundColor: COLORS.gray,
+    ...SHADOWS.small,
+  },
+  petCardActionButtonText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  expandedContent: {
+    marginTop: SPACING.md,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  dataTable: {
+    backgroundColor: COLORS.background,
+    borderRadius: BORDER_RADIUS.medium,
+    overflow: 'hidden',
+    ...SHADOWS.small,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  tableHeaderText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.surface,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'left',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  tableRowEven: {
+    backgroundColor: COLORS.surface,
+  },
+  tableCategoryText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.text,
+    fontWeight: '500',
+    flex: 1,
+    textAlign: 'left',
+    borderRightWidth: 1,
+    borderRightColor: COLORS.border,
+    paddingRight: SPACING.sm,
+  },
+  tableValueText: {
+    ...TYPOGRAPHY.small,
+    color: COLORS.textSecondary,
+    flex: 1,
+    textAlign: 'left',
+    paddingLeft: SPACING.sm,
+  },
+  exportButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.medium,
+    marginTop: SPACING.md,
+    alignItems: 'center',
+    ...SHADOWS.small,
+  },
+  exportButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.surface,
+    fontWeight: '600',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
@@ -147,16 +326,25 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h2,
     color: COLORS.text,
   },
-  addButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 20,
+  contentContainer: {
+    flex: 1,
   },
-  addButtonText: {
-    ...TYPOGRAPHY.caption,
+  addCatButton: {
+    position: 'absolute',
+    bottom: SPACING.lg,
+    right: SPACING.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.medium,
+  },
+  addCatButtonText: {
+    ...TYPOGRAPHY.h1,
     color: COLORS.surface,
-    fontWeight: '600',
+    fontWeight: '300',
   },
   listContainer: {
     padding: SPACING.lg,
@@ -175,9 +363,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary + '05',
   },
   petAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 96,
+    height: 96,
+    borderRadius: 12,
     backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
@@ -187,17 +375,17 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: 12,
   },
   avatarEmoji: {
     fontSize: 40,
   },
   petInfo: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: SPACING.md,
   },
   petName: {
-    ...TYPOGRAPHY.h3,
+    ...TYPOGRAPHY.h1,
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
@@ -210,32 +398,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   petAge: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.bodyMedium,
     color: COLORS.textSecondary,
     marginBottom: SPACING.xs,
   },
   petGender: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.textSecondary,
-  },
-  petStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: SPACING.md,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.primary,
-    marginBottom: SPACING.xs,
-  },
-  statLabel: {
-    ...TYPOGRAPHY.small,
+    ...TYPOGRAPHY.bodyMedium,
     color: COLORS.textSecondary,
   },
   currentBadge: {
