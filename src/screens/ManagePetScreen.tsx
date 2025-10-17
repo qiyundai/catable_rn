@@ -16,7 +16,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
 import { PetForm, RootStackParamList } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import WheelPicker from '../components/WheelPicker';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -78,34 +78,6 @@ const ManagePetScreen: React.FC = () => {
     }
   }, [existingPet]);
 
-  const genderOptions = [
-    { label: 'Male', value: 'male' },
-    { label: 'Female', value: 'female' },
-    { label: 'Other', value: 'other' },
-  ];
-
-  const breedOptions = [
-    { label: 'Mixed', value: 'Mixed' },
-    { label: 'Persian', value: 'Persian' },
-    { label: 'Maine Coon', value: 'Maine Coon' },
-    { label: 'Siamese', value: 'Siamese' },
-    { label: 'British Shorthair', value: 'British Shorthair' },
-    { label: 'Ragdoll', value: 'Ragdoll' },
-    { label: 'American Shorthair', value: 'American Shorthair' },
-    { label: 'Scottish Fold', value: 'Scottish Fold' },
-    { label: 'Other', value: 'Other' },
-  ];
-
-  const personalityOptions = [
-    { label: 'Playful', value: 'Playful' },
-    { label: 'Calm', value: 'Calm' },
-    { label: 'Energetic', value: 'Energetic' },
-    { label: 'Independent', value: 'Independent' },
-    { label: 'Affectionate', value: 'Affectionate' },
-    { label: 'Curious', value: 'Curious' },
-    { label: 'Shy', value: 'Shy' },
-    { label: 'Social', value: 'Social' },
-  ];
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -251,19 +223,19 @@ const ManagePetScreen: React.FC = () => {
 
           {renderFormField(
             'Gender *',
-            genderOptions.find(opt => opt.value === petForm.gender)?.label || petForm.gender || '',
+            PET_GENDER_OPTIONS.find(opt => opt.value === petForm.gender)?.label || petForm.gender || '',
             () => setShowGenderPicker(true)
           )}
 
           {renderFormField(
             'Breed *',
-            breedOptions.find(opt => opt.value === petForm.breed)?.label || petForm.breed || '',
+            PET_BREED_OPTIONS.find(opt => opt.value === petForm.breed)?.label || petForm.breed || '',
             () => setShowBreedPicker(true)
           )}
 
           {renderFormField(
             'Personality *',
-            personalityOptions.find(opt => opt.value === petForm.personality)?.label || petForm.personality || '',
+            PET_PERSONALITY_OPTIONS.find(opt => opt.value === petForm.personality)?.label || petForm.personality || '',
             () => setShowPersonalityPicker(true)
           )}
         </View>
@@ -319,7 +291,7 @@ const ManagePetScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {genderOptions.map(option => (
+              {PET_GENDER_OPTIONS.map(option => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
@@ -358,7 +330,7 @@ const ManagePetScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {breedOptions.map(option => (
+              {PET_BREED_OPTIONS.map(option => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
@@ -397,7 +369,7 @@ const ManagePetScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {personalityOptions.map(option => (
+              {PET_PERSONALITY_OPTIONS.map(option => (
                 <TouchableOpacity
                   key={option.value}
                   style={[

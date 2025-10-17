@@ -14,11 +14,14 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
   const visibleItems = 5; // Show 5 items (2 above, 1 center, 2 below)
   const containerHeight = itemHeight * visibleItems;
   const totalContentHeight = items.length * itemHeight + (itemHeight * 4); // Items + padding
+  const isProgrammaticScroll = useRef(false);
 
   const handleScroll = (event: any) => {
     const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round(y / itemHeight); // Direct index
-    if (index >= 0 && index < items.length && index !== selectedIndex) {
+    const index = Math.round(y / itemHeight);
+    
+    // Don't call onSelectionChange during programmatic scrolls
+    if (!isProgrammaticScroll.current && index >= 0 && index < items.length && index !== selectedIndex) {
       onSelectionChange(index);
     }
   };
@@ -26,16 +29,32 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
   const handleMomentumScrollEnd = (event: any) => {
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / itemHeight);
-    if (index >= 0 && index < items.length) {
+    
+    // Only call onSelectionChange if this wasn't a programmatic scroll
+    if (!isProgrammaticScroll.current && index >= 0 && index < items.length) {
       onSelectionChange(index);
     }
+    
+    // Reset the flag
+    isProgrammaticScroll.current = false;
   };
 
   const scrollToIndex = (index: number) => {
+    // Account for the paddingVertical: 80 (2 items above + 2 items below)
+    const scrollY = index * itemHeight; // Don't subtract padding - scroll to the actual position
+    
+    // Set flag to indicate this is a programmatic scroll
+    isProgrammaticScroll.current = true;
+    
     scrollViewRef.current?.scrollTo({
-      y: index * itemHeight, // Direct position
+      y: scrollY,
       animated: true,
     });
+    
+    // Reset the flag after animation completes
+    setTimeout(() => {
+      isProgrammaticScroll.current = false;
+    }, 500); // Give enough time for animation to complete
   };
 
   // Scroll to selected index when component mounts or selectedIndex changes

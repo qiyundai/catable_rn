@@ -328,6 +328,35 @@ export const ONBOARDING_STEPS = [
   },
 ];
 
+export const PET_GENDER_OPTIONS = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Other', value: 'other' },
+];
+
+export const PET_BREED_OPTIONS = [
+  { label: 'Mixed', value: 'Mixed' },
+  { label: 'Persian', value: 'Persian' },
+  { label: 'Maine Coon', value: 'Maine Coon' },
+  { label: 'Siamese', value: 'Siamese' },
+  { label: 'British Shorthair', value: 'British Shorthair' },
+  { label: 'Ragdoll', value: 'Ragdoll' },
+  { label: 'American Shorthair', value: 'American Shorthair' },
+  { label: 'Scottish Fold', value: 'Scottish Fold' },
+  { label: 'Other', value: 'Other' },
+];
+
+export const PET_PERSONALITY_OPTIONS = [
+  { label: 'Playful', value: 'Playful' },
+  { label: 'Calm', value: 'Calm' },
+  { label: 'Energetic', value: 'Energetic' },
+  { label: 'Independent', value: 'Independent' },
+  { label: 'Affectionate', value: 'Affectionate' },
+  { label: 'Curious', value: 'Curious' },
+  { label: 'Shy', value: 'Shy' },
+  { label: 'Social', value: 'Social' },
+];
+
 export const SOCIAL_LOGIN_PROVIDERS = [
   {
     id: 'google',

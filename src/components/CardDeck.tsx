@@ -17,7 +17,6 @@ interface CardDeckProps {
   onSkip?: () => void;
   onComplete?: () => void;
   renderCard: (item: any, index: number, relativeIndex: number, isTopCard: boolean) => React.ReactNode;
-  showSkipButton?: (currentIndex: number) => boolean;
   cardWidth?: number;
   cardHeight?: number;
   maxVisibleCards?: number;
@@ -30,7 +29,6 @@ const CardDeck: React.FC<CardDeckProps> = ({
   onSkip,
   onComplete,
   renderCard,
-  showSkipButton,
   cardWidth = screenWidth * 0.85,
   cardHeight = screenWidth * 0.6,
   maxVisibleCards = 3,
@@ -199,41 +197,39 @@ const CardDeck: React.FC<CardDeckProps> = ({
       ) : (
         <>
           {/* Swipe Indicators */}
-          {showSkipButton?.(currentIndex) && (
-            <Animated.View 
+          <Animated.View 
+            style={{
+              position: 'absolute',
+              left: -SPACING.lg,
+              top: 0,
+              bottom: 0,
+              width: 60,
+              opacity: leftIndicatorOpacity,
+              transform: [{ scaleX: leftIndicatorScale }],
+              zIndex: 20,
+            }}
+          >
+            <LinearGradient
+              colors={[COLORS.disabled, 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
               style={{
-                position: 'absolute',
-                left: -SPACING.lg,
-                top: 0,
-                bottom: 0,
-                width: 60,
-                opacity: leftIndicatorOpacity,
-                transform: [{ scaleX: leftIndicatorScale }],
-                zIndex: 20,
+                flex: 1,
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                paddingLeft: 20,
               }}
             >
-              <LinearGradient
-                colors={[COLORS.disabled, 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={{
-                  flex: 1,
-                  justifyContent: 'center',
-                  alignItems: 'flex-start',
-                  paddingLeft: 20,
-                }}
-              >
-                <Animated.Text style={{
-                  color: COLORS.surface,
-                  fontWeight: 'bold',
-                  fontSize: 14,
-                  transform: [{ rotate: '-90deg' }],
-                }}>
-                  SKIP
-                </Animated.Text>
-              </LinearGradient>
-            </Animated.View>
-          )}
+              <Animated.Text style={{
+                color: COLORS.surface,
+                fontWeight: 'bold',
+                fontSize: 14,
+                transform: [{ rotate: '-90deg' }],
+              }}>
+                SKIP
+              </Animated.Text>
+            </LinearGradient>
+          </Animated.View>
           
           <Animated.View 
             style={{

@@ -56,6 +56,7 @@ const TasksScreen: React.FC = () => {
         inputType: 'numeric',
         unit: 'times',
         value: 0,
+        increment: 1,
       },
       'poop_consistency': {
         title: 'Poop Consistency',
@@ -181,13 +182,13 @@ const TasksScreen: React.FC = () => {
             <View style={styles.numericButtons}>
               <TouchableOpacity 
                 style={[styles.numericButton, styles.buttonShadow]}
-                onPress={() => updateTaskValue(task.id, Math.max(0, currentValue - 10))}
+                onPress={() => updateTaskValue(task.id, Math.max(0, currentValue - (task.increment || 1)))}
               >
                 <Text style={styles.numericButtonText}>-</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.numericButton, styles.buttonShadow]}
-                onPress={() => updateTaskValue(task.id, currentValue + 10)}
+                onPress={() => updateTaskValue(task.id, currentValue + (task.increment || 1))}
               >
                 <Text style={styles.numericButtonText}>+</Text>
               </TouchableOpacity>
@@ -362,18 +363,9 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     position: 'relative',
   },
-  swipeIndicator: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -30,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    borderRadius: 20,
-    zIndex: 11,
-  },
   leftIndicator: {
     left: 20,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.gray,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -394,12 +386,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  swipeIndicatorText: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: COLORS.surface,
   },
   leftIndicatorText: {
     ...TYPOGRAPHY.h3,

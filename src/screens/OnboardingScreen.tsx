@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store';
 import { PetForm } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
 import TagSelector from '../components/TagSelector';
@@ -854,7 +854,6 @@ const OnboardingScreen: React.FC = () => {
             onSkip={handleSkip}
             onComplete={handleComplete}
             renderCard={renderCardForDeck}
-            showSkipButton={shouldShowSkipButton}
             cardWidth={CARD_WIDTH}
             cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
@@ -931,11 +930,7 @@ const OnboardingScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {[
-                { label: 'Male', value: 'male' },
-                { label: 'Female', value: 'female' },
-                { label: 'Other', value: 'other' }
-              ].map(option => (
+              {PET_GENDER_OPTIONS.map(option => (
                 <TouchableOpacity
                   key={option.value}
                   style={[
@@ -983,25 +978,22 @@ const OnboardingScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {[
-                'Mixed', 'Persian', 'Maine Coon', 'Siamese', 'British Shorthair',
-                'Ragdoll', 'American Shorthair', 'Scottish Fold', 'Other'
-              ].map(breed => (
+              {PET_BREED_OPTIONS.map(breed => (
                 <TouchableOpacity
-                  key={breed}
+                  key={breed.value}
                   style={[
                     styles.optionItem,
-                    tempBreed === breed && styles.optionItemSelected
+                    tempBreed === breed.value && styles.optionItemSelected
                   ]}
-                  onPress={() => setTempBreed(breed)}
+                  onPress={() => setTempBreed(breed.value)}
                 >
                   <Text style={[
                     styles.optionText,
-                    tempBreed === breed && styles.optionTextSelected
+                    tempBreed === breed.value && styles.optionTextSelected
                   ]}>
-                    {breed}
+                    {breed.label}
                   </Text>
-                  {tempBreed === breed && (
+                  {tempBreed === breed.value && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
                 </TouchableOpacity>
@@ -1034,25 +1026,22 @@ const OnboardingScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {[
-                'Playful', 'Calm', 'Energetic', 'Independent',
-                'Affectionate', 'Curious', 'Shy', 'Social'
-              ].map(personality => (
+              {PET_PERSONALITY_OPTIONS.map(personality => (
                 <TouchableOpacity
-                  key={personality}
+                  key={personality.value}
                   style={[
                     styles.optionItem,
-                    tempPersonality === personality && styles.optionItemSelected
+                    tempPersonality === personality.value && styles.optionItemSelected
                   ]}
-                  onPress={() => setTempPersonality(personality)}
+                  onPress={() => setTempPersonality(personality.value)}
                 >
                   <Text style={[
                     styles.optionText,
-                    tempPersonality === personality && styles.optionTextSelected
+                    tempPersonality === personality.value && styles.optionTextSelected
                   ]}>
-                    {personality}
+                    {personality.label}
                   </Text>
-                  {tempPersonality === personality && (
+                  {tempPersonality === personality.value && (
                     <Text style={styles.checkmark}>✓</Text>
                   )}
                 </TouchableOpacity>
@@ -1116,15 +1105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     padding: SPACING.lg,
     position: 'relative',
-  },
-  swipeIndicator: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -30,
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
-    borderRadius: 20,
-    zIndex: 11,
   },
   leftIndicator: {
     left: SPACING.lg,
