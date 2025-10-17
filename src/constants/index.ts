@@ -24,7 +24,35 @@ export const COLORS = {
   disabled: '#BDC3C7',
   progress: '#FF9633',
   black: '#000000',
+  gray: '#F5F5F5',
   darkInk: '#1E232C',
+};
+
+export const SHADOWS = {
+  small: {
+    elevation: 2,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  medium: {
+    elevation: 4,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  large: {
+    elevation: 8,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+};
+
+export const BORDER_RADIUS = {
+  small: 4,
+  medium: 8,
+  large: 16,
 };
 
 export const SPACING = {

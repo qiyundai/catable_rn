@@ -11,37 +11,102 @@ import {
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 import ProgressBar from '../components/ProgressBar';
+import CardDeck from '../components/CardDeck';
+import { UserTask } from '../types';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.75; // 75% of screen width
 const CARD_HEIGHT = screenHeight * 0.5; // 50% of screen height
 
 const TasksScreen: React.FC = () => {
-  const { currentPet, pets } = useAppStore();
+  const { currentPet, pets, userTasks, getCurrentStreak, incrementStreak } = useAppStore();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(0);
-  const [taskValues, setTaskValues] = useState<{[key: string]: any}>({
-    '1': 0, // Water intake
-    '2': false, // Feeding
-    '3': 2, // Playtime activity
-    '4': 2, // Poop consistency
-    '5': false, // Litter box
+  const [taskValues, setTaskValues] = useState<{[key: string]: any}>(() => {
+    // Initialize task values based on user's selected tasks
+    const initialValues: {[key: string]: any} = {};
+    userTasks?.daily?.forEach(task => {
+      const taskConfigs: { [key: string]: any } = {
+        'feed': false,
+        'peeing_frequency': 0,
+        'poop_consistency': 2,
+        'activity': 2,
+        'grooming': false,
+      };
+      initialValues[task.id] = taskConfigs[task.id] ?? false;
+    });
+    return initialValues;
   });
   
-  // Mock data for demonstration - daily tasks as cards
-  const dailyTasks = [
-    {
-      id: '1',
-      title: 'Water Intake',
-      description: 'How much water did your cat drink today?',
-      icon: '💧',
+  // Convert user tasks to card format
+  const convertUserTaskToCard = (task: UserTask, index: number) => {
+    // Map task IDs to their card configurations
+    const taskConfigs: { [key: string]: any } = {
+      'feed': {
+        title: 'Feeding',
+        description: 'Did your cat eat today?',
+        icon: '🍽️',
+        inputType: 'yesno',
+        value: false,
+      },
+      'peeing_frequency': {
+        title: 'Peeing Frequency',
+        description: 'How many times did your cat pee today?',
+        icon: '💧',
+        inputType: 'numeric',
+        unit: 'times',
+        value: 0,
+      },
+      'poop_consistency': {
+        title: 'Poop Consistency',
+        description: 'How was your cat\'s poop today?',
+        icon: '💩',
+        inputType: 'slider',
+        options: ['Hard & Dry', 'Firm', 'Normal', 'Soft', 'Watery Diarrhea'],
+        value: 2,
+      },
+      'activity': {
+        title: 'Activity Level',
+        description: 'How active was your cat today?',
+        icon: '🎾',
+        inputType: 'slider',
+        options: ['Very Lazy', 'Lazy', 'Normal', 'Active', 'Super Energetic'],
+        value: 2,
+      },
+      'grooming': {
+        title: 'Grooming',
+        description: 'Did you groom your cat today?',
+        icon: '🪥',
+        inputType: 'yesno',
+        value: false,
+      },
+    };
+
+    const config = taskConfigs[task.id] || {
+      title: task.name,
+      description: `Track ${task.name.toLowerCase()}`,
+      icon: '📝',
+      inputType: 'yesno',
+      value: false,
+    };
+
+    return {
+      id: task.id,
+      title: config.title,
+      description: config.description,
+      icon: config.icon,
       type: 'daily',
-      inputType: 'numeric',
-      unit: 'ml',
-      value: 0,
-    },
+      inputType: config.inputType,
+      unit: config.unit,
+      options: config.options,
+      value: taskValues[task.id] ?? config.value,
+    };
+  };
+
+  // Get daily tasks from user's selection, with fallback for incomplete onboarding
+  const dailyTasks = userTasks?.daily?.map(convertUserTaskToCard) || [
     {
-      id: '2',
+      id: 'feed',
       title: 'Feeding',
       description: 'Did your cat eat today?',
       icon: '🍽️',
@@ -50,8 +115,8 @@ const TasksScreen: React.FC = () => {
       value: false,
     },
     {
-      id: '3',
-      title: 'Playtime Activity',
+      id: 'activity',
+      title: 'Activity Level',
       description: 'How active was your cat today?',
       icon: '🎾',
       type: 'daily',
@@ -59,28 +124,10 @@ const TasksScreen: React.FC = () => {
       options: ['Very Lazy', 'Lazy', 'Normal', 'Active', 'Super Energetic'],
       value: 2,
     },
-    {
-      id: '4',
-      title: 'Poop Consistency',
-      description: 'How was your cat\'s poop today?',
-      icon: '💩',
-      type: 'daily',
-      inputType: 'slider',
-      options: ['Hard & Dry', 'Firm', 'Normal', 'Soft', 'Watery Diarrhea'],
-      value: 2,
-    },
-    {
-      id: '5',
-      title: 'Litter Box',
-      description: 'Did your cat use the litter box?',
-      icon: '📦',
-      type: 'daily',
-      inputType: 'yesno',
-      value: false,
-    },
   ];
 
-  const streak = 7; // Mock streak data
+  // Get real streak data for current pet
+  const streak = currentPet ? getCurrentStreak(currentPet.id) : 0;
   const totalTasks = dailyTasks.length;
 
   // Helper functions to update task values
@@ -95,91 +142,29 @@ const TasksScreen: React.FC = () => {
   const getCurrentTaskValue = () => taskValues[getCurrentTask()?.id] ?? 0;
 
 
-  // Animation values for card deck
-  const position = useRef(new Animated.ValueXY()).current;
 
-  const rotate = position.x.interpolate({
-    inputRange: [-screenWidth / 2, 0, screenWidth / 2],
-    outputRange: ['-10deg', '0deg', '10deg'],
-    extrapolate: 'clamp',
-  });
-
-  const cardBackgroundColor = position.x.interpolate({
-    inputRange: [-screenWidth / 2, 0, screenWidth / 2],
-    outputRange: [COLORS.surface, COLORS.surface, COLORS.primary],
-    extrapolate: 'clamp',
-  });
-
-  // Swipe indicator animations
-  const leftIndicatorOpacity = position.x.interpolate({
-    inputRange: [-screenWidth / 2, -screenWidth / 4, 0],
-    outputRange: [1, 0.5, 0],
-    extrapolate: 'clamp',
-  });
-
-  const rightIndicatorOpacity = position.x.interpolate({
-    inputRange: [0, screenWidth / 4, screenWidth / 2],
-    outputRange: [0, 0.5, 1],
-    extrapolate: 'clamp',
-  });
-
-  const leftIndicatorScale = position.x.interpolate({
-    inputRange: [-screenWidth / 2, -screenWidth / 4, 0],
-    outputRange: [1.2, 1, 0.8],
-    extrapolate: 'clamp',
-  });
-
-  const rightIndicatorScale = position.x.interpolate({
-    inputRange: [0, screenWidth / 4, screenWidth / 2],
-    outputRange: [0.8, 1, 1.2],
-    extrapolate: 'clamp',
-  });
-
-  // Pan responder for swipe gestures
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
-    },
-    onPanResponderMove: (_, gestureState) => {
-      position.setValue({ x: gestureState.dx, y: gestureState.dy });
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dx > 120) {
-        // Swipe right - submit
-        handleSubmit();
-      } else if (gestureState.dx < -120) {
-        // Swipe left - skip
-        handleSkip();
-      } else {
-        // Return to center
-        Animated.spring(position, {
-          toValue: { x: 0, y: 0 },
-          useNativeDriver: false,
-        }).start();
-      }
-    },
-  });
-
-  const handleSubmit = () => {
-    setCompletedTasks(prev => prev + 1);
-    nextCard('right');
+  const handleNext = () => {
+    if (currentCardIndex < dailyTasks.length - 1) {
+      setCompletedTasks(prev => prev + 1);
+      setCurrentCardIndex(prev => prev + 1);
+    }
+    // If it's the last card, don't increment - let CardDeck handle completion
   };
 
   const handleSkip = () => {
-    nextCard('left');
+    setCurrentCardIndex(prev => prev + 1);
   };
 
-  const nextCard = (direction: 'left' | 'right') => {
-    const exitX = direction === 'right' ? screenWidth : -screenWidth;
-    
-    Animated.timing(position, {
-      toValue: { x: exitX, y: 0 },
-      duration: 300,
-      useNativeDriver: false,
-    }).start(() => {
-      setCurrentCardIndex(prev => prev + 1);
-      position.setValue({ x: 0, y: 0 });
-    });
+  const handleComplete = () => {
+    // Count the last task as completed
+    setCompletedTasks(prev => prev + 1);
+    // Increment streak for current pet
+    if (currentPet) {
+      incrementStreak(currentPet.id);
+    }
+    // Mark all tasks as completed by setting index beyond the array
+    setCurrentCardIndex(dailyTasks.length);
+    console.log('All tasks completed!');
   };
 
   const renderInput = (task: any) => {
@@ -269,51 +254,18 @@ const TasksScreen: React.FC = () => {
     }
   };
 
-  const renderCard = (task: any, index: number, relativeIndex: number) => {
-    const isTopCard = relativeIndex === 0;
-    
-    // Calculate scale for inactive cards (gentler scaling)
-    const scaleFactor = isTopCard ? 1 : Math.max(0.95 - (relativeIndex * 0.03), 0.7);
-
-    const cardStyle = [
-      styles.card,
-      isTopCard && styles.topCard,
-    ];
-
+  const renderCardForDeck = (task: any, index: number, relativeIndex: number, isTopCard: boolean) => {
     return (
-      <Animated.View
-        key={task.id}
-        style={[
-          cardStyle,
-          {
-            bottom: isTopCard ? 160 : 175 + (relativeIndex * 25), // Stack cards even more aggressively
-            zIndex: isTopCard ? 10 : 10 - relativeIndex, // Higher zIndex for cards closer to front
-            transform: [
-              { translateX: isTopCard ? position.x : 0 },
-              { translateY: isTopCard ? position.y : 0 }, // Only swipe animation for active card
-              { rotate: isTopCard ? rotate : '0deg' },
-              { scale: scaleFactor }, // Apply proportional scaling
-            ],
-          },
-          isTopCard && {
-            backgroundColor: cardBackgroundColor,
-          },
-        ]}
-        {...(isTopCard ? panResponder.panHandlers : {})}
-      >
-
-        {/* Card content */}
-        <View style={styles.cardContent}>
-          <View style={styles.cardIcon}>
-            <Text style={styles.cardIconText}>{task.icon}</Text>
-          </View>
-          
-          <Text style={styles.cardTitle}>{task.title}</Text>
-          <Text style={styles.cardDescription}>{task.description}</Text>
-          
-          {renderInput(task)}
+      <View style={styles.cardContent}>
+        <View style={styles.cardIcon}>
+          <Text style={styles.cardIconText}>{task.icon}</Text>
         </View>
-      </Animated.View>
+        
+        <Text style={styles.cardTitle}>{task.title}</Text>
+        <Text style={styles.cardDescription}>{task.description}</Text>
+        
+        {renderInput(task)}
+      </View>
     );
   };
 
@@ -338,13 +290,6 @@ const TasksScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Current Pet Info */}
-      {currentPet && (
-        <View style={styles.petInfo}>
-          <Text style={styles.petName}>Today's tasks for {currentPet.name}</Text>
-        </View>
-      )}
-
       {/* Card Deck */}
       <View style={styles.cardDeck}>
         {allTasksCompleted ? (
@@ -359,40 +304,17 @@ const TasksScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          <>
-            {/* Swipe Indicators */}
-            <Animated.View 
-              style={[
-                styles.swipeIndicator,
-                styles.leftIndicator,
-                {
-                  opacity: leftIndicatorOpacity,
-                  transform: [{ scale: leftIndicatorScale }],
-                }
-              ]}
-            >
-              <Text style={styles.leftIndicatorText}>SKIP</Text>
-            </Animated.View>
-            
-            <Animated.View 
-              style={[
-                styles.swipeIndicator,
-                styles.rightIndicator,
-                {
-                  opacity: rightIndicatorOpacity,
-                  transform: [{ scale: rightIndicatorScale }],
-                }
-              ]}
-            >
-              <Text style={styles.swipeIndicatorText}>SUBMIT</Text>
-            </Animated.View>
-
-            {dailyTasks
-              .map((task, index) => ({ task, index }))
-              .filter(({ index }) => index >= currentCardIndex)
-              .slice(0, 3) // Only show next 2 cards (3 cards total: active + 2 behind)
-              .map(({ task, index }, relativeIndex) => renderCard(task, index, relativeIndex))}
-          </>
+          <CardDeck
+            items={dailyTasks}
+            currentIndex={currentCardIndex}
+            onNext={handleNext}
+            onSkip={handleSkip}
+            onComplete={handleComplete}
+            renderCard={renderCardForDeck}
+            cardWidth={CARD_WIDTH}
+            cardHeight={CARD_HEIGHT}
+            maxVisibleCards={3}
+          />
         )}
       </View>
     </View>

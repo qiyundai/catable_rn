@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, Pet, Log, Task, Streak, Achievement, AppState } from '../types';
+import { User, Pet, Log, Task, Streak, Achievement, AppState, UserTasks } from '../types';
 
 interface AppStore extends AppState {
   // Actions
@@ -13,6 +13,13 @@ interface AppStore extends AppState {
   setOnboardingComplete: (complete: boolean) => void;
   setAuthenticated: (authenticated: boolean) => void;
   setLoading: (loading: boolean) => void;
+  setUserTasks: (tasks: UserTasks) => void;
+  
+  // Streak actions
+  updateStreak: (petId: string, streak: Streak) => void;
+  getCurrentStreak: (petId: string) => number;
+  incrementStreak: (petId: string) => void;
+  resetStreak: (petId: string) => void;
   
   // Logging actions
   addLog: (log: Log) => void;
@@ -23,9 +30,6 @@ interface AppStore extends AppState {
   addTask: (task: Task) => void;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   completeTask: (taskId: string) => void;
-  
-  // Streak actions
-  updateStreak: (petId: string, streak: Streak) => void;
   
   // Achievement actions
   unlockAchievement: (achievementId: string) => void;
@@ -44,6 +48,8 @@ const initialState: AppState = {
   isOnboardingComplete: false,
   isAuthenticated: false,
   isLoading: false,
+  userTasks: null,
+  streaks: {},
 };
 
 export const useAppStore = create<AppStore>()(
@@ -80,6 +86,111 @@ export const useAppStore = create<AppStore>()(
       
       setLoading: (loading) => set({ isLoading: loading }),
       
+      setUserTasks: (tasks) => set({ userTasks: tasks }),
+      
+      updateStreak: (petId, streak) => set((state) => ({
+        streaks: {
+          ...state.streaks,
+          [petId]: streak,
+        },
+      })),
+      
+      getCurrentStreak: (petId) => {
+        const state = get();
+        return state.streaks[petId]?.currentStreak || 0;
+      },
+      
+      incrementStreak: (petId) => set((state) => {
+        const currentStreak = state.streaks[petId];
+        const now = new Date();
+        
+        if (currentStreak) {
+          // Check if we already logged today
+          const lastLoggedDate = new Date(currentStreak.lastLoggedAt);
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const lastLoggedDay = new Date(lastLoggedDate.getFullYear(), lastLoggedDate.getMonth(), lastLoggedDate.getDate());
+          
+          if (lastLoggedDay.getTime() === today.getTime()) {
+            // Already logged today, don't increment
+            return state;
+          }
+          
+          // Check if it's consecutive (yesterday)
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          
+          if (lastLoggedDay.getTime() === yesterday.getTime()) {
+            // Consecutive day, increment streak
+            const newStreak = {
+              ...currentStreak,
+              currentStreak: currentStreak.currentStreak + 1,
+              longestStreak: Math.max(currentStreak.currentStreak + 1, currentStreak.longestStreak),
+              lastLoggedAt: now,
+              updatedAt: now,
+            };
+            return {
+              ...state,
+              streaks: {
+                ...state.streaks,
+                [petId]: newStreak,
+              },
+            };
+          } else {
+            // Not consecutive, reset streak
+            const newStreak = {
+              ...currentStreak,
+              currentStreak: 1,
+              longestStreak: Math.max(1, currentStreak.longestStreak),
+              lastLoggedAt: now,
+              updatedAt: now,
+            };
+            return {
+              ...state,
+              streaks: {
+                ...state.streaks,
+                [petId]: newStreak,
+              },
+            };
+          }
+        } else {
+          // First streak
+          const newStreak: Streak = {
+            id: `streak_${petId}_${Date.now()}`,
+            petId,
+            currentStreak: 1,
+            longestStreak: 1,
+            lastLoggedAt: now,
+            updatedAt: now,
+          };
+          return {
+            ...state,
+            streaks: {
+              ...state.streaks,
+              [petId]: newStreak,
+            },
+          };
+        }
+      }),
+      
+      resetStreak: (petId) => set((state) => {
+        const currentStreak = state.streaks[petId];
+        if (currentStreak) {
+          const newStreak = {
+            ...currentStreak,
+            currentStreak: 0,
+            updatedAt: new Date(),
+          };
+          return {
+            ...state,
+            streaks: {
+              ...state.streaks,
+              [petId]: newStreak,
+            },
+          };
+        }
+        return state;
+      }),
+      
       addLog: (log) => set((state) => ({
         // This would be handled by a separate logs store in a real app
         // For now, we'll just update the state
@@ -105,10 +216,6 @@ export const useAppStore = create<AppStore>()(
         // This would be handled by a separate tasks store in a real app
       })),
       
-      updateStreak: (petId, streak) => set((state) => ({
-        // This would be handled by a separate streaks store in a real app
-      })),
-      
       unlockAchievement: (achievementId) => set((state) => ({
         // This would be handled by a separate achievements store in a real app
       })),
@@ -122,6 +229,7 @@ export const useAppStore = create<AppStore>()(
         isOnboardingComplete: false,
         isAuthenticated: false,
         isLoading: false,
+        userTasks: null,
       }),
     }),
     {
@@ -133,6 +241,8 @@ export const useAppStore = create<AppStore>()(
         currentPet: state.currentPet,
         isOnboardingComplete: state.isOnboardingComplete,
         isAuthenticated: state.isAuthenticated,
+        userTasks: state.userTasks,
+        streaks: state.streaks,
       }),
     }
   )
