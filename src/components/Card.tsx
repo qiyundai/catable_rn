@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.75;
@@ -43,14 +43,7 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     backgroundColor: COLORS.surface,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...SHADOWS.medium,
   },
   cardContent: {
     flex: 1,

@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   LayoutAnimation,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -74,7 +75,7 @@ const PetProfilesScreen: React.FC = () => {
 
   const handleExportReport = () => {
     // TODO: Implement export functionality
-    console.log('Export report functionality not implemented yet');
+    Alert.alert('Coming Soon', 'Export functionality will be available in a future update.');
   };
 
   const renderPetCard = ({ item }: { item: Pet }) => {

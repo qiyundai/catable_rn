@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
 
 const ProfileScreen: React.FC = () => {
   const { user, signOut } = useAppStore();
@@ -117,12 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: SPACING.lg,
     marginBottom: SPACING.xl,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    ...SHADOWS.small,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -157,12 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 'auto',
     marginBottom: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
+    ...SHADOWS.small,
     shadowRadius: 4,
     elevation: 4,
   },

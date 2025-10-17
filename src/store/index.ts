@@ -4,6 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, Pet, Log, Task, Streak, Achievement, AppState, UserTasks } from '../types';
 
 interface AppStore extends AppState {
+  // Additional state
+  logs: Log[];
+  tasks: Task[];
+  achievements: Achievement[];
+  
   // Actions
   setUser: (user: User | null) => void;
   addPet: (pet: Pet) => void;
@@ -41,7 +46,7 @@ interface AppStore extends AppState {
   signOut: () => void;
 }
 
-const initialState: AppState = {
+const initialState: AppState & { logs: Log[]; tasks: Task[]; achievements: Achievement[] } = {
   user: null,
   pets: [],
   currentPet: null,
@@ -50,6 +55,9 @@ const initialState: AppState = {
   isLoading: false,
   userTasks: null,
   streaks: {},
+  logs: [],
+  tasks: [],
+  achievements: [],
 };
 
 export const useAppStore = create<AppStore>()(
@@ -192,32 +200,43 @@ export const useAppStore = create<AppStore>()(
       }),
       
       addLog: (log) => set((state) => ({
-        // This would be handled by a separate logs store in a real app
-        // For now, we'll just update the state
+        logs: [...state.logs, log],
       })),
       
       updateLog: (logId, updates) => set((state) => ({
-        // This would be handled by a separate logs store in a real app
+        logs: state.logs.map(log => 
+          log.id === logId ? { ...log, ...updates } : log
+        ),
       })),
       
       deleteLog: (logId) => set((state) => ({
-        // This would be handled by a separate logs store in a real app
+        logs: state.logs.filter(log => log.id !== logId),
       })),
       
       addTask: (task) => set((state) => ({
-        // This would be handled by a separate tasks store in a real app
+        tasks: [...state.tasks, task],
       })),
       
       updateTask: (taskId, updates) => set((state) => ({
-        // This would be handled by a separate tasks store in a real app
+        tasks: state.tasks.map(task => 
+          task.id === taskId ? { ...task, ...updates } : task
+        ),
       })),
       
       completeTask: (taskId) => set((state) => ({
-        // This would be handled by a separate tasks store in a real app
+        tasks: state.tasks.map(task => 
+          task.id === taskId 
+            ? { ...task, isCompleted: true, completedAt: new Date() }
+            : task
+        ),
       })),
       
       unlockAchievement: (achievementId) => set((state) => ({
-        // This would be handled by a separate achievements store in a real app
+        achievements: state.achievements.map(achievement =>
+          achievement.id === achievementId
+            ? { ...achievement, isUnlocked: true, unlockedAt: new Date() }
+            : achievement
+        ),
       })),
       
       reset: () => set(initialState),
@@ -230,6 +249,9 @@ export const useAppStore = create<AppStore>()(
         isAuthenticated: false,
         isLoading: false,
         userTasks: null,
+        logs: [],
+        tasks: [],
+        achievements: [],
       }),
     }),
     {
@@ -243,6 +265,9 @@ export const useAppStore = create<AppStore>()(
         isAuthenticated: state.isAuthenticated,
         userTasks: state.userTasks,
         streaks: state.streaks,
+        logs: state.logs,
+        tasks: state.tasks,
+        achievements: state.achievements,
       }),
     }
   )

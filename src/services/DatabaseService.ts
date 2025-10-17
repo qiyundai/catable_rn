@@ -21,7 +21,7 @@ class DatabaseService {
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
-        displayName TEXT NOT NULL,
+        userName TEXT NOT NULL,
         region TEXT NOT NULL,
         language TEXT NOT NULL,
         isGuest INTEGER NOT NULL DEFAULT 0,
@@ -38,7 +38,7 @@ class DatabaseService {
         name TEXT NOT NULL,
         avatar TEXT,
         breed TEXT NOT NULL,
-        age INTEGER NOT NULL,
+        ageMonths INTEGER NOT NULL,
         gender TEXT NOT NULL,
         personality TEXT NOT NULL,
         createdAt TEXT NOT NULL,
@@ -96,9 +96,9 @@ class DatabaseService {
     if (!this.db) return;
 
     await this.db.runAsync(
-      `INSERT OR REPLACE INTO users (id, email, displayName, region, language, isGuest, createdAt, updatedAt)
+      `INSERT OR REPLACE INTO users (id, email, userName, region, language, isGuest, createdAt, updatedAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user.id, user.email, user.displayName, user.region, user.language, user.isGuest ? 1 : 0, user.createdAt.toISOString(), user.updatedAt.toISOString()]
+      [user.id, user.email, user.userName, user.region, user.language, user.isGuest ? 1 : 0, user.createdAt.toISOString(), user.updatedAt.toISOString()]
     );
   }
 
@@ -125,9 +125,9 @@ class DatabaseService {
     if (!this.db) return;
 
     await this.db.runAsync(
-      `INSERT OR REPLACE INTO pets (id, userId, name, avatar, breed, age, gender, personality, createdAt, updatedAt)
+      `INSERT OR REPLACE INTO pets (id, userId, name, avatar, breed, ageMonths, gender, personality, createdAt, updatedAt)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [pet.id, pet.userId, pet.name, pet.avatar || null, pet.breed, pet.age, pet.gender, pet.personality, pet.createdAt.toISOString(), pet.updatedAt.toISOString()]
+      [pet.id, pet.userId, pet.name, pet.avatar || null, pet.breed, pet.ageMonths, pet.gender, pet.personality, pet.createdAt.toISOString(), pet.updatedAt.toISOString()]
     );
   }
 

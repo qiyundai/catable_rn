@@ -6,7 +6,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING } from '../constants';
+import { COLORS, SPACING, SHADOWS } from '../constants';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -160,14 +160,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
       ],
       backgroundColor: isTopCard ? cardBackgroundColor : COLORS.surface,
       borderRadius: 20,
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 2,
-      },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-      elevation: 5,
+      ...SHADOWS.medium,
     };
 
     return (

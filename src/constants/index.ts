@@ -222,36 +222,6 @@ export const LOG_TYPES = {
   },
 };
 
-export const ACHIEVEMENTS = [
-  {
-    id: 'first_log',
-    title: 'First Steps',
-    description: 'Log your first cat activity',
-    icon: '🌟',
-    xpReward: 10,
-  },
-  {
-    id: 'week_streak',
-    title: 'Week Warrior',
-    description: 'Maintain a 7-day logging streak',
-    icon: '🔥',
-    xpReward: 50,
-  },
-  {
-    id: 'month_streak',
-    title: 'Monthly Master',
-    description: 'Maintain a 30-day logging streak',
-    icon: '💎',
-    xpReward: 200,
-  },
-  {
-    id: 'perfect_week',
-    title: 'Perfect Week',
-    description: 'Complete all daily tasks for 7 days',
-    icon: '⭐',
-    xpReward: 100,
-  },
-];
 
 export const ONBOARDING_STEPS = [
   {

@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppStore } from '../store';
 import { PetForm } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
 import TagSelector from '../components/TagSelector';
@@ -1130,12 +1130,7 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     backgroundColor: COLORS.surface,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
+    ...SHADOWS.medium,
     shadowRadius: 3.84,
     elevation: 5,
   },

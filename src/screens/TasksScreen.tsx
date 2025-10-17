@@ -9,7 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { useAppStore } from '../store';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import CardDeck from '../components/CardDeck';
 import { UserTask } from '../types';
@@ -165,7 +165,6 @@ const TasksScreen: React.FC = () => {
     }
     // Mark all tasks as completed by setting index beyond the array
     setCurrentCardIndex(dailyTasks.length);
-    console.log('All tasks completed!');
   };
 
   const renderInput = (task: any) => {
@@ -366,24 +365,14 @@ const styles = StyleSheet.create({
   leftIndicator: {
     left: 20,
     backgroundColor: COLORS.gray,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    ...SHADOWS.small,
     shadowRadius: 4,
     elevation: 3,
   },
   rightIndicator: {
     right: 20,
     backgroundColor: COLORS.primary,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    ...SHADOWS.small,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -399,12 +388,7 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     backgroundColor: COLORS.surface,
     borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
+    ...SHADOWS.medium,
     shadowRadius: 3.84,
     elevation: 5,
   },
@@ -529,12 +513,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
   },
   buttonShadow: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.2,
+    ...SHADOWS.small,
     shadowRadius: 6,
     elevation: 5,
   },

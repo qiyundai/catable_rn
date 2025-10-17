@@ -165,28 +165,3 @@ export interface AppState {
   streaks: { [petId: string]: Streak };
 }
 
-// Logging input types
-export interface NumericInput {
-  value: number;
-  unit: string;
-  min?: number;
-  max?: number;
-  step?: number;
-}
-
-export interface SliderInput {
-  value: number;
-  min: number;
-  max: number;
-  labels: string[];
-}
-
-export interface YesNoInput {
-  value: boolean;
-}
-
-export interface TextInput {
-  value: string;
-  placeholder: string;
-  maxLength?: number;
-}

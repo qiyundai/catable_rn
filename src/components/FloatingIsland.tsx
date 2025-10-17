@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Dimensions, Animated } from 'react-native';
-import { COLORS, SPACING } from '../constants';
+import { COLORS, SPACING, SHADOWS } from '../constants';
 
 interface FloatingIslandProps {
   islandData?: any; // Island data for customization
@@ -348,11 +348,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    ...SHADOWS.large,
     // Add gradient-like effect with multiple layers
     borderWidth: 3,
     borderColor: '#A0522D',
