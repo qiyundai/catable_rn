@@ -310,9 +310,14 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const handleSkip = () => {
-    if (currentCardIndex < allSteps.length - 1) {
-      nextCard('left');
+    const skipTargetIndex = getSkipTargetIndex(currentCardIndex);
+    
+    if (skipTargetIndex < allSteps.length) {
+      // Jump to the skip target
+      setCurrentCardIndex(skipTargetIndex);
+      position.setValue({ x: 0, y: 0 });
     } else {
+      // Complete onboarding if we've reached the end
       setOnboardingComplete(true);
     }
   };
@@ -472,6 +477,33 @@ const OnboardingScreen: React.FC = () => {
 
   const getCombinedTasks = (category: 'daily' | 'weekly' | 'monthly') => {
     return [...taskCategories[category], ...customTasks[category]];
+  };
+
+  // Smart skip logic system
+  const getNextFlowControlIndex = (currentIndex: number): number => {
+    for (let i = currentIndex + 1; i < allSteps.length; i++) {
+      if (allSteps[i].type === 'flow_control') {
+        return i;
+      }
+    }
+    return allSteps.length - 1; // If no flow control found, go to last step
+  };
+
+  const getSkipTargetIndex = (currentIndex: number): number => {
+    const currentStep = allSteps[currentIndex];
+    
+    switch (currentStep.skipBehavior) {
+      case 'skip_to_next_flow_control':
+        return getNextFlowControlIndex(currentIndex);
+      case 'next':
+      default:
+        return currentIndex + 1;
+    }
+  };
+
+  const shouldShowSkipButton = (currentIndex: number): boolean => {
+    const currentStep = allSteps[currentIndex];
+    return currentStep.type === 'flow_control' || currentStep.skipBehavior !== 'next';
   };
 
   const addAnotherCat = () => {
@@ -908,18 +940,20 @@ const OnboardingScreen: React.FC = () => {
         ) : (
           <>
             {/* Swipe Indicators */}
-            <Animated.View 
-              style={[
-                styles.swipeIndicator,
-                styles.leftIndicator,
-                {
-                  opacity: leftIndicatorOpacity,
-                  transform: [{ scale: leftIndicatorScale }],
-                }
-              ]}
-            >
-              <Text style={styles.leftIndicatorText}>SKIP</Text>
-            </Animated.View>
+            {shouldShowSkipButton(currentCardIndex) && (
+              <Animated.View 
+                style={[
+                  styles.swipeIndicator,
+                  styles.leftIndicator,
+                  {
+                    opacity: leftIndicatorOpacity,
+                    transform: [{ scale: leftIndicatorScale }],
+                  }
+                ]}
+              >
+                <Text style={styles.leftIndicatorText}>SKIP</Text>
+              </Animated.View>
+            )}
             
             <Animated.View 
               style={[

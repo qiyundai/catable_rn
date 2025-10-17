@@ -97,6 +97,7 @@ const TasksScreen: React.FC = () => {
 
   // Animation values for card deck
   const position = useRef(new Animated.ValueXY()).current;
+
   const rotate = position.x.interpolate({
     inputRange: [-screenWidth / 2, 0, screenWidth / 2],
     outputRange: ['-10deg', '0deg', '10deg'],
