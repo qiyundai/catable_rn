@@ -22,6 +22,7 @@ import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import Card from '../components/Card';
 import WheelPicker from '../components/WheelPicker';
+import TagSelector from '../components/TagSelector';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.85; // 85% of screen width
@@ -41,8 +42,10 @@ const OnboardingScreen: React.FC = () => {
   const [ageMonths, setAgeMonths] = useState(12); // Default to 1 year (12 months)
   const [selectedYear, setSelectedYear] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(0);
-  const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>([]);
-  const [selectedRecurringTasks, setSelectedRecurringTasks] = useState<string[]>([]);
+  // New task selection states - initialize with all tasks selected by default
+  const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>(['feed', 'peeing_frequency', 'poop_consistency', 'activity', 'grooming']);
+  const [selectedWeeklyTasks, setSelectedWeeklyTasks] = useState<string[]>(['sleep_breathing', 'tooth_brushing', 'nail_clipping']);
+  const [selectedMonthlyTasks, setSelectedMonthlyTasks] = useState<string[]>(['flea_treatment', 'internal_deworming', 'vet_visit']);
   const [reminderTime, setReminderTime] = useState({ hour: 9, minute: 0, period: 'AM' });
   const [catPhotos, setCatPhotos] = useState<(string | null)[]>([null]);
   const [dynamicSteps, setDynamicSteps] = useState<any[]>([]);
@@ -84,6 +87,27 @@ const OnboardingScreen: React.FC = () => {
     { label: 'AM', value: 0 },
     { label: 'PM', value: 1 }
   ];
+
+  // Task data structure with new categorization
+  const taskCategories = {
+    daily: [
+      { id: 'feed', name: 'Feed', icon: '' },
+      { id: 'peeing_frequency', name: 'Peeing Frequency', icon: '' },
+      { id: 'poop_consistency', name: 'Poop Consistency', icon: '' },
+      { id: 'activity', name: 'Activity', icon: '' },
+      { id: 'grooming', name: 'Grooming', icon: '' },
+    ],
+    weekly: [
+      { id: 'sleep_breathing', name: 'Sleep Breathing Freq', icon: '' },
+      { id: 'tooth_brushing', name: 'Tooth Brushing', icon: '' },
+      { id: 'nail_clipping', name: 'Nail Clipping', icon: '' },
+    ],
+    monthly: [
+      { id: 'flea_treatment', name: 'Flea Treatment', icon: '' },
+      { id: 'internal_deworming', name: 'Internal Deworming', icon: '' },
+      { id: 'vet_visit', name: 'Vet Visit', icon: '' },
+    ]
+  };
 
   // Generate dynamic steps based on number of cats
   const generateDynamicSteps = () => {
@@ -294,20 +318,28 @@ const OnboardingScreen: React.FC = () => {
     });
   };
 
-  // Interactive input handlers
-  const toggleDailyTask = (task: string) => {
+  // Interactive input handlers for new task structure
+  const toggleDailyTask = (taskId: string) => {
     setSelectedDailyTasks(prev => 
-      prev.includes(task) 
-        ? prev.filter(t => t !== task)
-        : [...prev, task]
+      prev.includes(taskId) 
+        ? prev.filter(t => t !== taskId)
+        : [...prev, taskId]
     );
   };
 
-  const toggleRecurringTask = (task: string) => {
-    setSelectedRecurringTasks(prev => 
-      prev.includes(task) 
-        ? prev.filter(t => t !== task)
-        : [...prev, task]
+  const toggleWeeklyTask = (taskId: string) => {
+    setSelectedWeeklyTasks(prev => 
+      prev.includes(taskId) 
+        ? prev.filter(t => t !== taskId)
+        : [...prev, taskId]
+    );
+  };
+
+  const toggleMonthlyTask = (taskId: string) => {
+    setSelectedMonthlyTasks(prev => 
+      prev.includes(taskId) 
+        ? prev.filter(t => t !== taskId)
+        : [...prev, taskId]
     );
   };
 
@@ -669,57 +701,45 @@ const OnboardingScreen: React.FC = () => {
             <View style={styles.cardIcon}>
               <Text style={styles.cardIconText}>📅</Text>
             </View>
-            <Text style={styles.cardTitle}>{step.title}</Text>
-            <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.taskList}>
-              {['Water intake', 'Feeding', 'Playtime activity', 'Poop consistency', 'Litter'].map((task) => (
-                <TouchableOpacity 
-                  key={task} 
-                  style={styles.taskItem}
-                  onPress={() => toggleDailyTask(task)}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    selectedDailyTasks.includes(task) && styles.checkboxSelected
-                  ]}>
-                    {selectedDailyTasks.includes(task) && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.taskText}>{task}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <TagSelector
+              tasks={taskCategories.daily}
+              selectedTasks={selectedDailyTasks}
+              onTaskToggle={toggleDailyTask}
+              title={step.title}
+              description={step.description}
+            />
           </View>
         );
 
-      case 'recurring_tasks':
+      case 'weekly_tasks':
         return (
           <View style={styles.cardContent}>
             <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>🔄</Text>
+              <Text style={styles.cardIconText}>📊</Text>
             </View>
-            <Text style={styles.cardTitle}>{step.title}</Text>
-            <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.taskList}>
-              {['Grooming', 'Tooth brushing', 'Nail clipping', 'Flea treatment', 'Showering', 'Internal deworming', 'Vet check-up'].map((task) => (
-                <TouchableOpacity 
-                  key={task} 
-                  style={styles.taskItem}
-                  onPress={() => toggleRecurringTask(task)}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    selectedRecurringTasks.includes(task) && styles.checkboxSelected
-                  ]}>
-                    {selectedRecurringTasks.includes(task) && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </View>
-                  <Text style={styles.taskText}>{task}</Text>
-                </TouchableOpacity>
-              ))}
+            <TagSelector
+              tasks={taskCategories.weekly}
+              selectedTasks={selectedWeeklyTasks}
+              onTaskToggle={toggleWeeklyTask}
+              title={step.title}
+              description={step.description}
+            />
+          </View>
+        );
+
+      case 'monthly_tasks':
+        return (
+          <View style={styles.cardContent}>
+            <View style={styles.cardIcon}>
+              <Text style={styles.cardIconText}>📆</Text>
             </View>
+            <TagSelector
+              tasks={taskCategories.monthly}
+              selectedTasks={selectedMonthlyTasks}
+              onTaskToggle={toggleMonthlyTask}
+              title={step.title}
+              description={step.description}
+            />
           </View>
         );
 

@@ -263,10 +263,16 @@ export const ONBOARDING_STEPS = [
     component: 'DailyTasks',
   },
   {
-    id: 'recurring_tasks',
-    title: 'Recurring Tasks',
-    description: 'Choose recurring activities',
-    component: 'RecurringTasks',
+    id: 'weekly_tasks',
+    title: 'Weekly Tasks',
+    description: 'Choose weekly activities to track',
+    component: 'WeeklyTasks',
+  },
+  {
+    id: 'monthly_tasks',
+    title: 'Monthly Tasks',
+    description: 'Select monthly or less frequent activities',
+    component: 'MonthlyTasks',
   },
   {
     id: 'reminder_time',
