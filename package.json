@@ -23,6 +23,7 @@
     "@types/expo__vector-icons": "^9.0.1",
     "@types/react-navigation": "^3.0.8",
     "expo": "~54.0.10",
+    "expo-dev-client": "~6.0.15",
     "expo-font": "^14.0.8",
     "expo-image-picker": "~17.0.8",
     "expo-localization": "^17.0.7",
