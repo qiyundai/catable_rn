@@ -843,7 +843,7 @@ const OnboardingScreen: React.FC = () => {
               You're all set to start tracking your cat's health and activities.
             </Text>
             <Text style={styles.completionSubtext}>
-              Swipe to begin your journey! 🐱
+              You're all set to start tracking! 🐱
             </Text>
           </View>
         ) : (
@@ -857,6 +857,8 @@ const OnboardingScreen: React.FC = () => {
             cardWidth={CARD_WIDTH}
             cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
+            primaryButtonText={currentCardIndex === allSteps.length - 1 ? 'Complete' : 'Next'}
+            secondaryButtonText="Skip"
           />
         )}
       </View>

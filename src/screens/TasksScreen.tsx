@@ -315,6 +315,8 @@ const TasksScreen: React.FC = () => {
             cardWidth={CARD_WIDTH}
             cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
+            primaryButtonText={currentCardIndex === dailyTasks.length - 1 ? 'Submit' : 'Next'}
+            secondaryButtonText="Skip"
           />
         )}
       </View>
