@@ -30,12 +30,13 @@
   1. Welcome/intro
   2. Cat name & photo upload
   3. Basic info (age, gender, breed, personality)
-  4. Add another cat option
+  4. Add another cat option (uses deck buttons: "Yes, Add" / "No, Continue")
   5. Logging goals setup
   6. Daily tasks selection
   7. Recurring tasks selection (weekly/monthly)
   8. Reminder time picker
-- Skip and Next buttons on each card
+- Two-button navigation at bottom of each card
+- Button labels adapt per step (e.g., "Yes, Add"/"No, Continue" for add cat step)
 - Saves selections to store as `userTasks`
 
 **User Flow**: Sets `isOnboardingComplete = true` when finished
@@ -51,11 +52,14 @@
 - Streak counter display (days in a row)
 - Progress bar (tasks completed / total)
 - Card deck interface for going through daily tasks
+- Two-button navigation at bottom of each card
 - Input types:
-  - **Numeric**: +/- buttons (e.g., water intake)
-  - **Slider**: Multiple choice buttons (e.g., poop consistency, activity level)
-  - **Yes/No**: Binary toggle buttons
-- Swipe gestures: right to complete, left to skip
+  - **Numeric**: +/- buttons inside card (e.g., water intake)
+  - **Slider**: Multiple choice buttons inside card (e.g., poop consistency, activity level)
+  - **Yes/No**: Uses deck buttons ("Yes" and "No") instead of inline buttons
+- Button behavior:
+  - For yes/no tasks: "Yes" and "No" buttons set value and advance
+  - For other tasks: "Next"/"Submit" and "Skip" buttons
 - Completion screen when all tasks done
 - Increments streak when all tasks completed
 

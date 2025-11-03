@@ -693,20 +693,6 @@ const OnboardingScreen: React.FC = () => {
             </View>
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.addButton]}
-                onPress={addAnotherCat}
-              >
-                <Text style={styles.addButtonText}>Add Another Cat</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.continueButton]}
-                onPress={handleNext}
-              >
-                <Text style={styles.continueButtonText}>Continue</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         );
 
@@ -857,8 +843,39 @@ const OnboardingScreen: React.FC = () => {
             cardWidth={CARD_WIDTH}
             cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
-            primaryButtonText={currentCardIndex === allSteps.length - 1 ? 'Complete' : 'Next'}
-            secondaryButtonText="Skip"
+            primaryButtonText={
+              allSteps[currentCardIndex]?.id === 'add_another'
+                ? 'Yes, Add'
+                : currentCardIndex === allSteps.length - 1
+                ? 'Complete'
+                : 'Next'
+            }
+            secondaryButtonText={
+              allSteps[currentCardIndex]?.id === 'add_another'
+                ? 'No, Continue'
+                : 'Skip'
+            }
+            onPrimaryAction={(item, index) => {
+              if (item.id === 'add_another') {
+                addAnotherCat();
+                handleNext();
+              } else {
+                // Default behavior for other steps
+                if (index < allSteps.length - 1) {
+                  handleNext();
+                } else {
+                  handleComplete();
+                }
+              }
+            }}
+            onSecondaryAction={(item, index) => {
+              if (item.id === 'add_another') {
+                handleNext();
+              } else {
+                // Default behavior for other steps
+                handleSkip();
+              }
+            }}
           />
         )}
       </View>
@@ -1149,6 +1166,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: SPACING.xl,
+    paddingBottom: SPACING.xl + 60, // Extra padding for buttons (60px button height)
     alignItems: 'center',
     justifyContent: 'center',
   },

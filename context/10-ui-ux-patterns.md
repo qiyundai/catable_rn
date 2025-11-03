@@ -21,20 +21,23 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 ## Interaction Patterns
 
 ### Card-Based Interface
-- **Onboarding**: 8-step card deck with swipe/tap navigation
-- **Tasks**: Daily task cards in swipeable deck
+- **Onboarding**: 8-step card deck with button-based navigation
+- **Tasks**: Daily task cards in button-navigated deck
 - **Pet Profiles**: Card grid/list view
 
 **Benefits**:
 - Clear, focused interactions
 - Low cognitive load (one thing at a time)
-- Familiar swipe gesture (like Tinder)
+- Consistent button-based navigation
+- Accessible (no gesture requirement)
 
-### Swipe Gestures
-- **Right swipe**: Confirm/complete (green indicator)
-- **Left swipe**: Skip/cancel (gray indicator)
-- Visual feedback with animated indicators
-- Used in: Task completion, onboarding navigation
+### Button-Based Navigation
+- **Card Deck Navigation**: Two buttons at bottom center of each card
+- **Primary Button**: Green background, typically "Yes"/"Next"/"Submit"
+- **Secondary Button**: Outlined style, typically "No"/"Skip"
+- **Button Positioning**: 40px gap between buttons, 50% overlap with card (30px of 60px height)
+- **Dynamic Labels**: Button text changes based on card type (e.g., "Yes"/"No" for boolean questions)
+- Used in: Task completion, onboarding navigation, all card-based flows
 
 ### Button Patterns
 - **Primary**: Green background, white text, shadow
@@ -56,10 +59,11 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 - Used for: Poop consistency, activity level
 
 **Yes/No Input**:
-- Two side-by-side buttons (Yes/No)
-- Selected: Green background
-- Unselected: White/gray background
-- Used for: Binary questions (fed today? groomed?)
+- For task cards: Uses deck navigation buttons ("Yes" and "No" at bottom)
+- Card shows question only, no inline buttons
+- Selecting Yes/No sets value and advances to next card
+- Used for: Binary questions in task logging (fed today? groomed?)
+- Note: Inline Yes/No buttons removed in favor of unified deck navigation
 
 **Text Input**:
 - Standard text input with optional label
@@ -126,11 +130,10 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 ## Animation Patterns
 
 ### Card Deck Animations
-- **Pan gesture**: Cards follow finger during swipe
-- **Rotation**: Cards rotate slightly based on swipe direction
-- **Scale**: Background cards scale down for depth
-- **Color change**: Top card changes color based on direction
-- **Exit animation**: Smooth slide off screen
+- **Scale**: Background cards scale down for depth (stacked effect)
+- **Transitions**: Smooth card transitions when advancing
+- **Button interactions**: Press feedback with scale/shadow effects
+- **No swipe gestures**: Button-based navigation only (removed for accessibility and simplicity)
 
 ### Button Interactions
 - **Press feedback**: Slight scale on press (1.1x)

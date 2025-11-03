@@ -37,7 +37,7 @@ Reusable UI components in `src/components/`. This document describes each compon
 ### CardDeck
 **Location**: `src/components/CardDeck.tsx`
 
-**Purpose**: Swipeable card deck interface (used in onboarding and tasks)
+**Purpose**: Card deck interface with button-based navigation (used in onboarding and tasks)
 
 **Props**:
 - `items`: Array of card data
@@ -48,15 +48,25 @@ Reusable UI components in `src/components/`. This document describes each compon
 - `renderCard`: Function to render card content
 - `cardWidth`, `cardHeight`: Card dimensions
 - `maxVisibleCards`: How many cards to show stacked (default: 3)
+- `primaryButtonText`: Text for primary button (default: 'Yes')
+- `secondaryButtonText`: Text for secondary button (default: 'Skip')
+- `onPrimaryAction`: Optional custom handler for primary button (receives item, index)
+- `onSecondaryAction`: Optional custom handler for secondary button (receives item, index)
 
 **Features**:
-- Pan responder for swipe gestures
-- Smooth animations using Reanimated
-- Visual indicators for swipe directions
-- Stacked card effect with scale/position transforms
-- Swipe right = next/complete, swipe left = skip
+- Two-button navigation at bottom of each card
+- Buttons positioned at center bottom with 40px gap between them
+- Buttons overlap card by 50% (30px of 60px height)
+- Stacked card effect with scale transforms for depth
+- Configurable button text and actions per card
+- Smooth card transitions
 
-**Usage**: Used in `OnboardingScreen` and `TasksScreen`.
+**Button Behavior**:
+- Primary button: Default calls `onNext()` or `onComplete()` if last card
+- Secondary button: Default calls `onSkip()` if provided
+- Custom actions can override default behavior (e.g., for yes/no tasks or special flows)
+
+**Usage**: Used in `OnboardingScreen` and `TasksScreen`. Cards should have extra bottom padding (typically 60px) to accommodate buttons.
 
 ---
 

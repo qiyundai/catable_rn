@@ -220,32 +220,8 @@ const TasksScreen: React.FC = () => {
         );
       
       case 'yesno':
-        return (
-          <View style={styles.yesNoInput}>
-            <TouchableOpacity 
-              style={[styles.noButton, styles.buttonShadow, !currentValue && styles.buttonSelected]}
-              onPress={() => updateTaskValue(task.id, false)}
-            >
-              <Text style={[
-                styles.noButtonText,
-                !currentValue && styles.buttonTextSelected
-              ]}>
-                No
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.yesButton, styles.buttonShadow, currentValue && styles.buttonSelected]}
-              onPress={() => updateTaskValue(task.id, true)}
-            >
-              <Text style={[
-                styles.yesButtonText,
-                currentValue && styles.buttonTextSelected
-              ]}>
-                Yes
-              </Text>
-            </TouchableOpacity>
-          </View>
-        );
+        // For yes/no tasks, buttons are handled by deck navigation
+        return null;
       
       default:
         return null;
@@ -312,8 +288,54 @@ const TasksScreen: React.FC = () => {
             cardWidth={CARD_WIDTH}
             cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
-            primaryButtonText={currentCardIndex === dailyTasks.length - 1 ? 'Submit' : 'Next'}
-            secondaryButtonText="Skip"
+            primaryButtonText={
+              getCurrentTask()?.inputType === 'yesno'
+                ? 'Yes'
+                : currentCardIndex === dailyTasks.length - 1
+                ? 'Submit'
+                : 'Next'
+            }
+            secondaryButtonText={
+              getCurrentTask()?.inputType === 'yesno'
+                ? 'No'
+                : 'Skip'
+            }
+            onPrimaryAction={(item, index) => {
+              const task = item;
+              if (task.inputType === 'yesno') {
+                // Set value to true, count as completed, and move to next
+                updateTaskValue(task.id, true);
+                setCompletedTasks(prev => prev + 1);
+                if (index < dailyTasks.length - 1) {
+                  setCurrentCardIndex(prev => prev + 1);
+                } else {
+                  handleComplete();
+                }
+              } else {
+                // Default behavior for other tasks
+                if (index < dailyTasks.length - 1) {
+                  handleNext();
+                } else {
+                  handleComplete();
+                }
+              }
+            }}
+            onSecondaryAction={(item, index) => {
+              const task = item;
+              if (task.inputType === 'yesno') {
+                // Set value to false, count as completed, and move to next
+                updateTaskValue(task.id, false);
+                setCompletedTasks(prev => prev + 1);
+                if (index < dailyTasks.length - 1) {
+                  setCurrentCardIndex(prev => prev + 1);
+                } else {
+                  handleComplete();
+                }
+              } else {
+                // Default behavior for other tasks
+                handleSkip();
+              }
+            }}
           />
         )}
       </View>
@@ -413,6 +435,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: SPACING.xl,
+    paddingBottom: SPACING.xl + 60, // Extra padding for buttons (60px button height)
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -509,49 +532,6 @@ const styles = StyleSheet.create({
   },
   sliderOptionTextSelected: {
     color: COLORS.surface,
-  },
-  // Yes/No input
-  yesNoInput: {
-    flexDirection: 'row',
-    gap: SPACING.lg,
-  },
-  yesButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: 25,
-    backgroundColor: COLORS.primary,
-  },
-  noButton: {
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.md,
-    borderRadius: 25,
-    backgroundColor: COLORS.surface,
-  },
-  buttonShadow: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  buttonSelected: {
-    transform: [{ scale: 1.1 }],
-  },
-  yesButtonText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.surface,
-    fontWeight: '600',
-  },
-  noButtonText: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    fontWeight: '600',
-  },
-  buttonTextSelected: {
-    fontWeight: '700',
   },
   // Action buttons
   actionButtons: {
