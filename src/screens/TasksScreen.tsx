@@ -1,12 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  PanResponder,
-  Animated,
 } from 'react-native';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
@@ -165,7 +163,6 @@ const TasksScreen: React.FC = () => {
     }
     // Mark all tasks as completed by setting index beyond the array
     setCurrentCardIndex(dailyTasks.length);
-    console.log('All tasks completed!');
   };
 
   const renderInput = (task: any) => {
