@@ -20,6 +20,8 @@ import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
 import TagSelector from '../components/TagSelector';
 import CardDeck from '../components/CardDeck';
+import TaskReminderService from '../services/TaskReminderService';
+import NotificationService from '../services/NotificationService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.85; // 85% of screen width
@@ -77,7 +79,7 @@ const OnboardingScreen: React.FC = () => {
   const [tempBreed, setTempBreed] = useState('');
   const [tempPersonality, setTempPersonality] = useState('');
 
-  const { addPet, setOnboardingComplete, setUserTasks } = useAppStore();
+  const { addPet, setOnboardingComplete, setUserTasks, setTaskReminderState } = useAppStore();
 
   // Wheel picker data arrays
   const hourOptions = Array.from({ length: 12 }, (_, i) => ({
@@ -238,7 +240,7 @@ const OnboardingScreen: React.FC = () => {
     }
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     // Complete onboarding - save all cats
     petForms.forEach((petForm, index) => {
       if (petForm.name) {
@@ -266,6 +268,27 @@ const OnboardingScreen: React.FC = () => {
       },
     };
     setUserTasks(userTasks);
+
+    // Initialize task reminder state
+    const reminderState = TaskReminderService.initializeReminderState(userTasks);
+    setTaskReminderState(reminderState);
+
+    // Request notification permissions and schedule reminders
+    try {
+      const hasPermission = await NotificationService.requestPermissions();
+      if (hasPermission) {
+        // Use the first pet's name if available
+        const petName = petForms[0]?.name || 'your cat';
+        await NotificationService.scheduleTaskReminders(
+          userTasks,
+          reminderState,
+          petName
+        );
+      }
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+      // Continue even if notifications fail
+    }
 
     // Mark onboarding as complete by setting index beyond the array
     setCurrentCardIndex(allSteps.length);

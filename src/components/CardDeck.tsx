@@ -24,6 +24,7 @@ interface CardDeckProps {
   // Button configuration
   primaryButtonText?: string;
   secondaryButtonText?: string;
+  primaryButtonDisabled?: boolean;
   onPrimaryAction?: (item: any, index: number) => void;
   onSecondaryAction?: (item: any, index: number) => void;
 }
@@ -40,10 +41,12 @@ const CardDeck: React.FC<CardDeckProps> = ({
   maxVisibleCards = 3,
   primaryButtonText = 'Yes',
   secondaryButtonText = 'Skip',
+  primaryButtonDisabled = false,
   onPrimaryAction,
   onSecondaryAction,
 }) => {
   const handlePrimaryAction = () => {
+    if (primaryButtonDisabled) return;
     const currentItem = items[currentIndex];
     if (onPrimaryAction) {
       onPrimaryAction(currentItem, currentIndex);
@@ -102,13 +105,19 @@ const CardDeck: React.FC<CardDeckProps> = ({
               <Text style={styles.secondaryButtonText}>{secondaryButtonText}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.button, styles.primaryButton]}
+              style={[
+                styles.button, 
+                styles.primaryButton,
+                primaryButtonDisabled && styles.primaryButtonDisabled
+              ]}
               onPress={handlePrimaryAction}
+              disabled={primaryButtonDisabled}
             >
-              <Text style={styles.primaryButtonText}>
-                {currentIndex === items.length - 1 
-                  ? (primaryButtonText === 'Yes' ? 'Submit' : primaryButtonText)
-                  : primaryButtonText}
+              <Text style={[
+                styles.primaryButtonText,
+                primaryButtonDisabled && styles.primaryButtonTextDisabled
+              ]}>
+                {primaryButtonText}
               </Text>
             </TouchableOpacity>
           </View>
@@ -178,6 +187,13 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     ...TYPOGRAPHY.bodyBold,
     color: COLORS.surface,
+  },
+  primaryButtonDisabled: {
+    backgroundColor: COLORS.border,
+    opacity: 0.5,
+  },
+  primaryButtonTextDisabled: {
+    color: COLORS.textSecondary,
   },
   secondaryButtonText: {
     ...TYPOGRAPHY.bodyBold,

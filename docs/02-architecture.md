@@ -37,7 +37,7 @@
 - Custom fonts: LobsterTwo (headings), Roboto (body)
 
 ### Animations
-- **react-native-reanimated**: Native animations (for CardDeck swipe gestures)
+- **react-native-reanimated**: Native animations (for CardDeck animations)
 
 ### Notifications
 - **expo-notifications**: Local push notifications for reminders
@@ -48,28 +48,13 @@
 ### Charts & Visualization
 - **react-native-svg**: SVG rendering for charts (planned)
 
-## Project Structure
-
-```
-src/
-├── assets/          # Images, icons, logos, animations
-├── components/      # Reusable UI components
-├── constants/       # Design tokens, constants, configuration
-├── locales/         # i18n translation files
-├── navigation/      # Navigation configuration
-├── screens/         # Screen components (route destinations)
-├── services/        # Business logic services (Database, Notifications)
-├── store/           # Zustand state management
-├── types/           # TypeScript type definitions
-└── utils/           # Utility functions (i18n setup, helpers)
-```
-
 ## Architecture Patterns
 
 ### Service Layer Pattern
 Business logic is abstracted into service classes:
 - `DatabaseService`: All SQLite operations
 - `NotificationService`: All notification scheduling/handling
+- `TaskReminderService`: Task cycle logic and reminder state management
 
 ### Store Pattern
 Global state managed through Zustand store (`src/store/index.ts`):
@@ -77,6 +62,7 @@ Global state managed through Zustand store (`src/store/index.ts`):
 - Pet profiles
 - Logs and tasks
 - Streaks and achievements
+- Task reminder state
 - App-level flags (onboarding, auth)
 
 ### Component Composition
@@ -91,4 +77,36 @@ Global state managed through Zustand store (`src/store/index.ts`):
 3. **No External CSS**: Using StyleSheet API for consistent native performance
 4. **Service Singletons**: Database and Notification services are singleton instances
 5. **Persistence Strategy**: Zustand persists to AsyncStorage, SQLite stores raw data
+6. **Button-Based Navigation**: Card decks use buttons instead of swipe gestures for accessibility
+
+## Data Flow
+
+```
+User Action → Component → Store Action → Service → Database/Notifications
+                ↓
+            UI Update (immediate)
+                ↓
+         Persistence (async)
+```
+
+## State Management Strategy
+
+- **Global State (Zustand)**: User data, pets, tasks, streaks, app flags
+- **Local State (useState)**: Form inputs, UI toggles, temporary state
+- **Persistence**: Zustand → AsyncStorage, Services → SQLite
+
+## Service Integration
+
+Services are called from:
+1. Store actions (Zustand)
+2. Screen components (on mount/user action)
+3. Event handlers (notification taps)
+
+The store manages state; services manage persistence/notifications.
+
+## Related Documentation
+
+- [05-state-management.md](./05-state-management.md) - Detailed store documentation
+- [06-services.md](./06-services.md) - Service implementations
+- [03-project-structure.md](./03-project-structure.md) - File organization
 

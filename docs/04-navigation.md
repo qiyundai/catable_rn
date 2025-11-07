@@ -33,7 +33,7 @@ RootStackNavigator
    - Sets `isAuthenticated = true` in store
 
 2. **OnboardingScreen**: Appears after auth (if not completed)
-   - 8-step card-based tutorial
+   - Card-based tutorial with 8+ steps
    - Sets `isOnboardingComplete = true` when finished
 
 3. **MainTabNavigator**: Primary app interface (appears after onboarding)
@@ -46,7 +46,7 @@ RootStackNavigator
 - Daily task logging interface
 - Card deck for going through selected tasks
 - Streak counter and progress bar
-- Swipe or tap to complete tasks
+- Button-based navigation to complete tasks
 
 **PetProfiles Tab** (right):
 - List of all pet profiles
@@ -94,7 +94,7 @@ The tab bar is custom-designed:
 - Active state highlights with green background
 - Community button hides when on Community screen
 
-See `src/navigation/AppNavigator.tsx` for implementation.
+Implementation: `src/navigation/AppNavigator.tsx`
 
 ## Active Screen Tracking
 
@@ -108,4 +108,32 @@ Navigation is conditionally rendered based on store state:
 - Otherwise → MainTabNavigator
 
 This is handled in `AppNavigator.tsx` using the Zustand store.
+
+## Navigation Types
+
+Type-safe navigation parameters defined in `src/types/index.ts`:
+
+```typescript
+type RootStackParamList = {
+  Auth: undefined;
+  Onboarding: undefined;
+  Main: undefined;
+  ManagePet: { petId?: string };
+  PetProfile: { petId: string };
+  Logging: { petId: string; logTypeId: string };
+  Settings: undefined;
+  Profile: undefined;
+};
+
+type MainTabParamList = {
+  Tasks: undefined;
+  Community: undefined;
+  PetProfiles: undefined;
+};
+```
+
+## Related Documentation
+
+- [08-screens.md](./08-screens.md) - Screen details
+- [05-state-management.md](./05-state-management.md) - Store state that controls navigation
 

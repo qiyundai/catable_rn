@@ -23,12 +23,10 @@ interface AppStore {
   
   // Tasks & Logs
   userTasks: UserTasks | null;
-  tasks: Task[];
-  logs: Log[];
+  taskReminderState: TaskReminderState;
   
   // Gamification
   streaks: { [petId: string]: Streak };
-  achievements: Achievement[];
   
   // UI State
   isLoading: boolean;
@@ -51,14 +49,9 @@ interface AppStore {
 
 ### Task Management
 - `setUserTasks(tasks: UserTasks)`: Save user's task selections from onboarding
-- `addTask(task: Task)`: Add new task
-- `updateTask(taskId, updates)`: Update task
-- `completeTask(taskId)`: Mark task complete with timestamp
-
-### Logging
-- `addLog(log: Log)`: Add new log entry
-- `updateLog(logId, updates)`: Update log
-- `deleteLog(logId)`: Remove log
+- `setTaskReminderState(state)`: Set task reminder tracking state
+- `markTaskAsShown(taskId)`: Mark task as shown today
+- `markTaskAsCompleted(taskId)`: Mark task as completed
 
 ### Streaks
 - `updateStreak(petId, streak)`: Replace streak data
@@ -68,9 +61,6 @@ interface AppStore {
   - Checks if consecutive day (increments) or missed day (resets to 1)
   - Updates longest streak if needed
 - `resetStreak(petId)`: Reset streak to 0
-
-### Achievements
-- `unlockAchievement(achievementId)`: Mark achievement unlocked with timestamp
 
 ### Utility
 - `setLoading(boolean)`: Set global loading state
@@ -87,9 +77,7 @@ Only these fields are persisted to AsyncStorage:
 - `isAuthenticated`
 - `userTasks`
 - `streaks`
-- `logs`
-- `tasks`
-- `achievements`
+- `taskReminderState`
 
 ### Persistence Key
 Storage key: `'catable-storage'`
@@ -126,8 +114,6 @@ Current pattern:
 1. Update store (for immediate UI update)
 2. Save to database (for persistence)
 
-Future: Could add sync layer to keep them in sync automatically.
-
 ### Store ↔ Backend
 Not yet implemented. When backend is integrated:
 - Store will track `synced` flags
@@ -152,10 +138,16 @@ Not yet implemented. When backend is integrated:
 - Pet profiles
 - Logs and tasks
 - Global UI flags (loading, auth)
+- Task reminder state
 
 **Use Local State (`useState`) For**:
 - Form input values
 - UI toggles (modal open/closed)
 - Temporary UI state
 - Animation values
+
+## Related Documentation
+
+- [06-services.md](./06-services.md) - Services that interact with store
+- [10-tasks-system.md](./10-tasks-system.md) - Task reminder state usage
 

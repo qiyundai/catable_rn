@@ -1,4 +1,6 @@
-# Features & Screens
+# Screens
+
+Screen components in `src/screens/`. This document describes each screen's purpose and features.
 
 ## Core Screens
 
@@ -24,20 +26,23 @@
 **Purpose**: First-time user tutorial and setup
 
 **Features**:
-- 8-step card deck tutorial using `CardDeck` component
+- Card deck tutorial using `CardDeck` component
 - Progress bar showing completion
 - Steps:
   1. Welcome/intro
   2. Cat name & photo upload
   3. Basic info (age, gender, breed, personality)
-  4. Add another cat option (uses deck buttons: "Yes, Add" / "No, Continue")
+  4. Add another cat option
   5. Logging goals setup
   6. Daily tasks selection
-  7. Recurring tasks selection (weekly/monthly)
-  8. Reminder time picker
+  7. Weekly tasks selection
+  8. Monthly tasks selection
+  9. Reminder time picker
 - Two-button navigation at bottom of each card
-- Button labels adapt per step (e.g., "Yes, Add"/"No, Continue" for add cat step)
+- Button labels adapt per step
 - Saves selections to store as `userTasks`
+- Initializes task reminder state
+- Schedules notifications
 
 **User Flow**: Sets `isOnboardingComplete = true` when finished
 
@@ -52,22 +57,29 @@
 - Streak counter display (days in a row)
 - Progress bar (tasks completed / total)
 - Card deck interface for going through daily tasks
+- Filters tasks based on what should appear today (daily/weekly/monthly)
 - Two-button navigation at bottom of each card
 - Input types:
-  - **Numeric**: +/- buttons inside card (e.g., water intake)
-  - **Slider**: Multiple choice buttons inside card (e.g., poop consistency, activity level)
-  - **Yes/No**: Uses deck buttons ("Yes" and "No") instead of inline buttons
+  - **Boolean**: Yes/No buttons (uses deck buttons)
+  - **Text**: Text input field
+  - **Radio**: Single selection from options
+  - **Scale**: Numeric scale with labels
+  - **Choices**: Predefined choice options
+  - **Date**: Date selection
+  - **Object**: Complex nested fields (e.g., nail clipping paws)
 - Button behavior:
-  - For yes/no tasks: "Yes" and "No" buttons set value and advance
+  - For boolean-only tasks: "Yes" and "No" buttons
   - For other tasks: "Next"/"Submit" and "Skip" buttons
 - Completion screen when all tasks done
 - Increments streak when all tasks completed
+- Marks tasks as shown and completed in reminder state
 
 **Data Flow**:
-- Reads `userTasks.daily` from store
-- Maps tasks to card format with input configurations
+- Reads `userTasks` from store
+- Filters using `TaskReminderService.getTasksForToday()`
+- Maps tasks to task definitions from `constants/tasks.ts`
 - Updates local state for task values
-- Calls `incrementStreak()` when completed
+- Calls `incrementStreak()` and `markTaskAsCompleted()` when completed
 
 ---
 
@@ -188,4 +200,10 @@ All screens:
 - **Local State**: UI state (form values, toggles, animations) managed with `useState`
 - **Global State**: User data, pets, logs, tasks managed in Zustand store
 - **Persistence**: Zustand persists to AsyncStorage, DatabaseService persists to SQLite
+
+## Related Documentation
+
+- [07-components.md](./07-components.md) - Components used by screens
+- [04-navigation.md](./04-navigation.md) - Navigation flow
+- [10-tasks-system.md](./10-tasks-system.md) - TasksScreen details
 

@@ -2,8 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, Pet, Log, Task, Streak, Achievement, AppState, UserTasks } from '../types';
+import { TaskReminderState } from '../services/TaskReminderService';
 
 interface AppStore extends AppState {
+  // Task reminder state
+  taskReminderState: TaskReminderState;
+  
   // Actions
   setUser: (user: User | null) => void;
   addPet: (pet: Pet) => void;
@@ -14,6 +18,11 @@ interface AppStore extends AppState {
   setAuthenticated: (authenticated: boolean) => void;
   setLoading: (loading: boolean) => void;
   setUserTasks: (tasks: UserTasks) => void;
+  
+  // Task reminder actions
+  setTaskReminderState: (state: TaskReminderState) => void;
+  markTaskAsShown: (taskId: string) => void;
+  markTaskAsCompleted: (taskId: string) => void;
   
   // Streak actions
   updateStreak: (petId: string, streak: Streak) => void;
@@ -41,7 +50,7 @@ interface AppStore extends AppState {
   signOut: () => void;
 }
 
-const initialState: AppState = {
+const initialState: AppState & { taskReminderState: TaskReminderState } = {
   user: null,
   pets: [],
   currentPet: null,
@@ -50,6 +59,7 @@ const initialState: AppState = {
   isLoading: false,
   userTasks: null,
   streaks: {},
+  taskReminderState: {},
 };
 
 export const useAppStore = create<AppStore>()(
@@ -87,6 +97,20 @@ export const useAppStore = create<AppStore>()(
       setLoading: (loading) => set({ isLoading: loading }),
       
       setUserTasks: (tasks) => set({ userTasks: tasks }),
+      
+      setTaskReminderState: (state) => set({ taskReminderState: state }),
+      
+      markTaskAsShown: (taskId) => set((state) => {
+        const TaskReminderService = require('../services/TaskReminderService').default;
+        const newState = TaskReminderService.markTaskAsShown(taskId, state.taskReminderState);
+        return { taskReminderState: newState };
+      }),
+      
+      markTaskAsCompleted: (taskId) => set((state) => {
+        const TaskReminderService = require('../services/TaskReminderService').default;
+        const newState = TaskReminderService.markTaskAsCompleted(taskId, state.taskReminderState);
+        return { taskReminderState: newState };
+      }),
       
       updateStreak: (petId, streak) => set((state) => ({
         streaks: {
@@ -243,6 +267,7 @@ export const useAppStore = create<AppStore>()(
         isAuthenticated: state.isAuthenticated,
         userTasks: state.userTasks,
         streaks: state.streaks,
+        taskReminderState: state.taskReminderState,
       }),
     }
   )

@@ -1,4 +1,4 @@
-# Data Models & Types
+# Types & Data Models
 
 All type definitions are in `src/types/index.ts`. This document explains the core data structures.
 
@@ -145,6 +145,37 @@ interface UserTasks {
 
 **Purpose**: Stores user's selected tracking preferences from onboarding. Used to generate daily task cards.
 
+## UserTask
+
+```typescript
+interface UserTask {
+  id: string;
+  name: string;
+  icon: string;
+  recurringCycle: 'daily' | 'weekly' | 'monthly';
+  isCustom: boolean;
+}
+```
+
+**Purpose**: Individual task selection from onboarding.
+
+## TaskReminderState
+
+```typescript
+interface TaskReminderState {
+  [taskId: string]: TaskCompletionRecord;
+}
+
+interface TaskCompletionRecord {
+  taskId: string;
+  lastCompleted?: Date;
+  lastShown?: Date;
+  cycleStartDate: Date;
+}
+```
+
+**Purpose**: Tracks task completion and cycle state for reminder system.
+
 ## NotificationSettings
 
 ```typescript
@@ -195,4 +226,9 @@ Tables map directly to these types:
 - `users`, `pets`, `logs`, `tasks`, `streaks`
 - Foreign key relationships: `pets.userId`, `logs.petId`, `tasks.petId`, `streaks.petId`
 - Dates stored as ISO strings, converted to Date objects on retrieval
+
+## Related Documentation
+
+- [06-services.md](./06-services.md) - Services that use these types
+- [05-state-management.md](./05-state-management.md) - Store types
 

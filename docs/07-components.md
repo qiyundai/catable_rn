@@ -143,12 +143,11 @@ Reusable UI components in `src/components/`. This document describes each compon
 **Purpose**: Multi-column picker (like time picker)
 
 **Props**:
-- `columns`: Array of column data (options arrays)
-- `selectedValues`: Array of selected indices per column
-- `onValueChange`: Callback with new values
-- `width`: Column width
+- `items`: Array of picker items with label and value
+- `selectedIndex`: Currently selected index
+- `onSelectionChange`: Callback with new index
 
-**Usage**: Time picker (hour, minute, AM/PM), date pickers.
+**Usage**: Time picker (hour, minute, AM/PM), date pickers, age picker.
 
 ---
 
@@ -208,4 +207,9 @@ When creating new components:
 3. Import design tokens from constants
 4. Follow existing component patterns
 5. Export as default
+
+## Related Documentation
+
+- [09-styling-design.md](./09-styling-design.md) - Design system used by components
+- [08-screens.md](./08-screens.md) - Screens that use these components
 

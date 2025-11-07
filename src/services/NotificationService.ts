@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { NotificationSettings } from '../types';
+import { NotificationSettings, UserTasks } from '../types';
+import { TaskReminderState } from './TaskReminderService';
+import TaskReminderService from './TaskReminderService';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -8,6 +10,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -44,10 +48,10 @@ class NotificationService {
     
     for (const day of days) {
       const trigger: Notifications.WeeklyTriggerInput = {
+        type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
         weekday: day + 1, // Convert 0-6 to 1-7 (Sunday = 1)
         hour: hours,
         minute: minutes,
-        repeats: true,
       };
 
       const id = await Notifications.scheduleNotificationAsync({
@@ -104,9 +108,9 @@ class NotificationService {
 
     // Schedule for 8 PM if no activity logged
     const trigger: Notifications.DailyTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: 20,
       minute: 0,
-      repeats: true,
     };
 
     return await Notifications.scheduleNotificationAsync({
@@ -125,9 +129,9 @@ class NotificationService {
 
     // Schedule for 9 PM
     const trigger: Notifications.DailyTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: 21,
       minute: 0,
-      repeats: true,
     };
 
     return await Notifications.scheduleNotificationAsync({
@@ -150,6 +154,7 @@ class NotificationService {
     triggerDate.setHours(10, 0, 0, 0);
 
     const trigger: Notifications.DateTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
       date: triggerDate,
     };
 
@@ -167,6 +172,129 @@ class NotificationService {
   // Handle notification received while app is in foreground
   addNotificationReceivedListener(listener: (notification: Notifications.Notification) => void) {
     return Notifications.addNotificationReceivedListener(listener);
+  }
+
+  /**
+   * Schedule reminders for all user tasks based on their cycles
+   */
+  async scheduleTaskReminders(
+    userTasks: UserTasks,
+    reminderState: TaskReminderState,
+    petName: string = 'your cat'
+  ): Promise<void> {
+    // Convert reminder time to 24-hour format
+    let hour = userTasks.reminderTime.hour;
+    if (userTasks.reminderTime.period === 'PM' && hour !== 12) {
+      hour += 12;
+    } else if (userTasks.reminderTime.period === 'AM' && hour === 12) {
+      hour = 0;
+    }
+    const minute = userTasks.reminderTime.minute;
+
+    // Get all tasks that should be shown today
+    const tasksForToday = TaskReminderService.getTasksForToday(userTasks, reminderState);
+
+    // Schedule daily task reminders
+    for (const task of tasksForToday.daily) {
+      await this.scheduleTaskReminder(task, 'daily', hour, minute, petName);
+    }
+
+    // Schedule weekly task reminders
+    for (const task of tasksForToday.weekly) {
+      await this.scheduleTaskReminder(task, 'weekly', hour, minute, petName);
+    }
+
+    // Schedule monthly task reminders
+    for (const task of tasksForToday.monthly) {
+      await this.scheduleTaskReminder(task, 'monthly', hour, minute, petName);
+    }
+  }
+
+  /**
+   * Schedule a single task reminder based on its cycle
+   */
+  private async scheduleTaskReminder(
+    task: { id: string; name: string },
+    cycle: 'daily' | 'weekly' | 'monthly',
+    hour: number,
+    minute: number,
+    petName: string
+  ): Promise<string> {
+    const content = {
+      title: `Time to log: ${task.name} 🐱`,
+      body: `Don't forget to log ${petName}'s ${task.name.toLowerCase()}`,
+      data: { taskId: task.id, type: 'task_reminder' },
+    };
+
+    let trigger: Notifications.NotificationTriggerInput;
+
+    switch (cycle) {
+      case 'daily':
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        };
+        break;
+
+      case 'weekly':
+        // Schedule for today, then repeat weekly
+        const today = new Date();
+        
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+          hour,
+          minute,
+          weekday: today.getDay() + 1, // 1-7 (Sunday = 1)
+        };
+        break;
+
+      case 'monthly':
+        // Schedule for today, then repeat monthly
+        const todayMonthly = new Date();
+        const nextMonth = new Date(todayMonthly);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        
+        // For monthly, we'll use a date trigger
+        // Note: Expo doesn't support monthly repeats directly, so we'll schedule for next month
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: nextMonth,
+        };
+        break;
+
+      default:
+        trigger = {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        };
+    }
+
+    return await Notifications.scheduleNotificationAsync({
+      content,
+      trigger,
+    });
+  }
+
+  /**
+   * Reschedule all task reminders (call when tasks are completed or cycle changes)
+   */
+  async rescheduleTaskReminders(
+    userTasks: UserTasks,
+    reminderState: TaskReminderState,
+    petName: string = 'your cat'
+  ): Promise<void> {
+    // Cancel all existing task reminders
+    const allNotifications = await this.getScheduledNotifications();
+    for (const notification of allNotifications) {
+      if (notification.content.data?.type === 'task_reminder') {
+        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+      }
+    }
+
+    // Schedule new reminders
+    await this.scheduleTaskReminders(userTasks, reminderState, petName);
   }
 }
 

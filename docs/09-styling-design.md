@@ -1,27 +1,108 @@
-# UI/UX Patterns
+# Styling & Design System
 
-This document describes design patterns and conventions used throughout the app.
+This document describes the design system, styling patterns, and UI/UX conventions used throughout the app.
 
-## Design System
+## Design Tokens
 
-### Color Scheme
-- **Primary**: Green (`#18C07A`) - used for active states, CTAs, progress
-- **Background**: White - clean, minimal aesthetic
-- **Text**: Dark gray (`#2C3E50`) - high contrast for readability
-- **Accents**: Teal and blue for variety without overwhelming
+All design tokens are centralized in `src/constants/index.ts`.
 
-### Typography Hierarchy
-- **Headings**: LobsterTwo (decorative, friendly)
-- **Body**: Roboto (clean, readable)
-- **Sizing**: Clear hierarchy from h1 (32px) to small (12px)
+### Colors
 
-### Spacing System
-Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
+```typescript
+COLORS = {
+  primary: '#18C07A',      // Main brand green
+  secondary: '#4ECDC4',    // Teal accent
+  accent: '#45B7D1',       // Blue accent
+  background: '#FFFFFF',   // Main background
+  surface: '#FFFFFF',      // Card/surface background
+  text: '#2C3E50',         // Primary text
+  textSecondary: '#7F8C8D', // Secondary text
+  border: '#E1E8ED',       // Border color
+  success: '#18C07A',      // Success states
+  warning: '#F39C12',      // Warning states
+  error: '#E74C3C',        // Error states
+  disabled: '#BDC3C7',     // Disabled elements
+  progress: '#FF9633',     // Progress indicators
+}
+```
 
-## Interaction Patterns
+### Typography
+
+```typescript
+TYPOGRAPHY = {
+  h1: { fontSize: 32, fontWeight: 'bold', fontFamily: 'LobsterTwo' },
+  h2: { fontSize: 24, fontWeight: 'bold', fontFamily: 'LobsterTwo' },
+  h3: { fontSize: 20, fontWeight: '600', fontFamily: 'LobsterTwo' },
+  body: { fontSize: 16, fontWeight: 'normal', fontFamily: 'Roboto' },
+  caption: { fontSize: 14, fontWeight: 'normal', fontFamily: 'Roboto' },
+  small: { fontSize: 12, fontWeight: 'normal', fontFamily: 'Roboto' },
+  // Plus medium/bold variants
+}
+```
+
+**Font Families**:
+- `LobsterTwo`: Headings (Regular 400 and Bold 700 weights)
+- `Roboto`: Body text (Regular 400, Medium 500, Bold 700 weights)
+
+### Spacing
+
+```typescript
+SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+}
+```
+
+### Shadows
+
+```typescript
+SHADOWS = {
+  small: { elevation: 2, shadowOpacity: 0.25, shadowRadius: 3.84 },
+  medium: { elevation: 4, shadowOpacity: 0.25, shadowRadius: 3.84 },
+  large: { elevation: 8, shadowOpacity: 0.25, shadowRadius: 3.84 },
+}
+```
+
+### Border Radius
+
+```typescript
+BORDER_RADIUS = {
+  small: 4,
+  medium: 8,
+  large: 16,
+}
+```
+
+Common values:
+- Cards: 20px
+- Buttons: 25px (pill shape) or 12px (rounded rectangle)
+
+## Usage Pattern
+
+```typescript
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.background,
+    padding: SPACING.lg,
+    ...SHADOWS.medium,
+  },
+  title: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.text,
+  },
+});
+```
+
+## UI Patterns
 
 ### Card-Based Interface
-- **Onboarding**: 8-step card deck with button-based navigation
+- **Onboarding**: Card deck with button-based navigation
 - **Tasks**: Daily task cards in button-navigated deck
 - **Pet Profiles**: Card grid/list view
 
@@ -31,19 +112,11 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 - Consistent button-based navigation
 - Accessible (no gesture requirement)
 
-### Button-Based Navigation
-- **Card Deck Navigation**: Two buttons at bottom center of each card
-- **Primary Button**: Green background, typically "Yes"/"Next"/"Submit"
-- **Secondary Button**: Outlined style, typically "No"/"Skip"
-- **Button Positioning**: 40px gap between buttons, 50% overlap with card (30px of 60px height)
-- **Dynamic Labels**: Button text changes based on card type (e.g., "Yes"/"No" for boolean questions)
-- Used in: Task completion, onboarding navigation, all card-based flows
-
 ### Button Patterns
-- **Primary**: Green background, white text, shadow
+- **Primary**: Green background (`COLORS.primary`), white text, shadow
 - **Secondary**: White background, green text/border
 - **Outline**: Transparent with border
-- All buttons have consistent padding, border radius, shadows
+- All buttons have consistent padding, border radius (25px), shadows
 
 ### Input Patterns
 
@@ -62,8 +135,6 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 - For task cards: Uses deck navigation buttons ("Yes" and "No" at bottom)
 - Card shows question only, no inline buttons
 - Selecting Yes/No sets value and advances to next card
-- Used for: Binary questions in task logging (fed today? groomed?)
-- Note: Inline Yes/No buttons removed in favor of unified deck navigation
 
 **Text Input**:
 - Standard text input with optional label
@@ -83,17 +154,11 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 - **Right**: Profile icon (navigates to Profile)
 - Consistent across all tabs
 
-### Stack Navigation
-- Standard back button for nested screens
-- Modal-style presentation for pet management
-- No header on main tabs (custom tab bar)
-
 ## Feedback Patterns
 
 ### Loading States
 - Global `isLoading` flag in store
 - Can show loading spinner/overlay
-- Currently minimal implementation
 
 ### Success States
 - Completion screen after finishing tasks
@@ -133,57 +198,10 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 - **Scale**: Background cards scale down for depth (stacked effect)
 - **Transitions**: Smooth card transitions when advancing
 - **Button interactions**: Press feedback with scale/shadow effects
-- **No swipe gestures**: Button-based navigation only (removed for accessibility and simplicity)
 
 ### Button Interactions
-- **Press feedback**: Slight scale on press (1.1x)
+- **Press feedback**: Slight scale on press
 - **Shadow elevation**: Increases on press
-
-### Transitions
-- **Screen transitions**: Default React Navigation animations
-- **Modal transitions**: Slide up from bottom
-- **Card transitions**: Smooth, spring-like
-
-## Responsive Patterns
-
-### Screen Dimensions
-- Cards sized as percentage of screen width (75%)
-- Heights calculated from screen dimensions
-- Safe area insets respected for notches/home indicators
-
-### Orientation
-- Currently portrait-only (common for mobile apps)
-- Could be extended for tablet landscape
-
-## Gamification Patterns
-
-### Streak Display
-- Large, prominent number
-- "Day Streak" label
-- Updates immediately after task completion
-- Visual prominence encourages maintenance
-
-### Progress Tracking
-- Progress bar showing X of Y completed
-- Percentage display optional
-- Green color indicates progress
-
-### Achievement System
-- Unlocked achievements shown with timestamp
-- XP rewards (future: currency for features)
-- Notification when unlocked
-
-## Data Visualization Patterns
-
-### Log History
-- Timeline view (planned)
-- Chart view (planned) for trends
-- Color-coded by log type
-
-### Reports
-- Time range selector (7/30/90 days)
-- Aggregated statistics
-- Shareable format (PDF/CSV planned)
 
 ## Consistency Principles
 
@@ -192,4 +210,9 @@ Consistent 4px base unit (4, 8, 16, 24, 32, 48px)
 3. **Typography**: Use TYPOGRAPHY styles, never inline font sizes
 4. **Shadows**: Use SHADOWS constants for elevation
 5. **Border Radius**: Use BORDER_RADIUS or consistent values (20px for cards, 25px for buttons)
+
+## Related Documentation
+
+- [13-constants-config.md](./13-constants-config.md) - Constants reference
+- [07-components.md](./07-components.md) - Component styling
 

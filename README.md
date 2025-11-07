@@ -79,6 +79,27 @@ src/
 └── assets/            # Images, fonts, and other assets
 ```
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) folder:
+
+- **[Getting Started](./docs/01-getting-started.md)** - Setup and quick start
+- **[Architecture](./docs/02-architecture.md)** - Tech stack and design decisions
+- **[Project Structure](./docs/03-project-structure.md)** - File organization
+- **[Navigation](./docs/04-navigation.md)** - Navigation flow and routing
+- **[State Management](./docs/05-state-management.md)** - Zustand store patterns
+- **[Services](./docs/06-services.md)** - Database, Notifications, Task Reminders
+- **[Components](./docs/07-components.md)** - Reusable UI components
+- **[Screens](./docs/08-screens.md)** - Screen components and features
+- **[Styling & Design](./docs/09-styling-design.md)** - Design system and UI patterns
+- **[Tasks System](./docs/10-tasks-system.md)** - Task definitions and reminder logic
+- **[Notifications](./docs/11-notifications.md)** - Notification scheduling
+- **[Types & Data Models](./docs/12-types-data-models.md)** - TypeScript types
+- **[Constants & Config](./docs/13-constants-config.md)** - Configuration reference
+- **[Internationalization](./docs/14-i18n.md)** - i18n setup and usage
+
+See [docs/README.md](./docs/README.md) for the complete documentation index.
+
 ## Key Features Implementation
 
 ### Authentication Flow

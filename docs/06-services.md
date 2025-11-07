@@ -66,8 +66,6 @@ await DatabaseService.savePet(newPet);
 const pets = await DatabaseService.getPets(userId);
 ```
 
----
-
 ## NotificationService
 
 **Location**: `src/services/NotificationService.ts`
@@ -87,11 +85,12 @@ const hasPermission = await NotificationService.requestPermissions();
 
 **Reminders**:
 - `scheduleReminder(settings: NotificationSettings)`: Schedule recurring reminders
-  - Parses time string (HH:mm)
-  - Creates weekly triggers for selected days
-  - Returns comma-separated notification IDs
 - `cancelReminder(notificationId: string)`: Cancel specific reminder
 - `cancelAllReminders()`: Clear all scheduled notifications
+
+**Task Reminders**:
+- `scheduleTaskReminders(userTasks, reminderState, petName)`: Schedule reminders for all tasks
+- `rescheduleTaskReminders(userTasks, reminderState, petName)`: Reschedule all task reminders
 
 **Special Notifications**:
 - `showAchievementNotification(title, description)`: Immediate achievement notification
@@ -115,25 +114,65 @@ import NotificationService from '../services/NotificationService';
 // Request permissions on first use
 await NotificationService.requestPermissions();
 
-// Schedule reminder
-const notificationId = await NotificationService.scheduleReminder({
-  petId: 'pet123',
-  logTypeId: 'feeding',
-  enabled: true,
-  time: '08:00',
-  days: [1, 2, 3, 4, 5], // Mon-Fri
-});
+// Schedule task reminders
+await NotificationService.scheduleTaskReminders(
+  userTasks,
+  reminderState,
+  petName
+);
 ```
 
----
+## TaskReminderService
+
+**Location**: `src/services/TaskReminderService.ts`
+
+**Purpose**: Task cycle logic and reminder state management
+
+### Key Methods
+
+**Task Visibility**:
+- `shouldShowTaskToday(task, reminderState, today)`: Determines if task should appear today
+- `getTasksForToday(userTasks, reminderState)`: Get all tasks due today
+
+**State Management**:
+- `initializeReminderState(userTasks, today)`: Initialize state for all tasks
+- `markTaskAsShown(taskId, reminderState, today)`: Mark task as shown
+- `markTaskAsCompleted(taskId, reminderState, today)`: Mark task as completed
+
+**Cycle Logic**:
+- `getTaskCycle(taskId)`: Get cycle type (daily/weekly/monthly)
+- `getNextReminderDate(task, reminderState, today)`: Calculate next reminder date
+
+### Cycle Behavior
+- **Daily**: Show every day
+- **Weekly**: Show today, then 7 days later
+- **Monthly**: Show today, then ~30 days later
+
+### Usage Pattern
+```typescript
+import TaskReminderService from '../services/TaskReminderService';
+
+// Get tasks for today
+const tasksForToday = TaskReminderService.getTasksForToday(
+  userTasks,
+  reminderState
+);
+
+// Mark task as completed
+const newState = TaskReminderService.markTaskAsCompleted(
+  taskId,
+  reminderState
+);
+```
 
 ## Service Patterns
 
 ### Singleton Pattern
-Both services export singleton instances:
+All services export singleton instances:
 ```typescript
 export default new DatabaseService();
 export default new NotificationService();
+export default new TaskReminderService();
 ```
 
 Import and use directly, no need to instantiate.
@@ -151,4 +190,10 @@ Services are typically called from:
 3. Event handlers (notification taps)
 
 The store manages state; services manage persistence/notifications.
+
+## Related Documentation
+
+- [05-state-management.md](./05-state-management.md) - Store that uses services
+- [11-notifications.md](./11-notifications.md) - Notification system details
+- [10-tasks-system.md](./10-tasks-system.md) - Task reminder system
 

@@ -1,162 +1,179 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import CardDeck from '../components/CardDeck';
 import { UserTask } from '../types';
+import { TASK_DEFINITIONS, getTaskById, getTaskByOldId, TaskDefinition, TaskField } from '../constants/tasks';
+import TaskReminderService from '../services/TaskReminderService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const CARD_WIDTH = screenWidth * 0.75; // 75% of screen width
 const CARD_HEIGHT = screenHeight * 0.5; // 50% of screen height
 
 const TasksScreen: React.FC = () => {
-  const { currentPet, pets, userTasks, getCurrentStreak, incrementStreak } = useAppStore();
+  const { 
+    currentPet, 
+    pets, 
+    userTasks, 
+    getCurrentStreak, 
+    incrementStreak,
+    taskReminderState,
+    markTaskAsShown,
+    markTaskAsCompleted,
+  } = useAppStore();
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(0);
-  const [taskValues, setTaskValues] = useState<{[key: string]: any}>(() => {
-    // Initialize task values based on user's selected tasks
-    const initialValues: {[key: string]: any} = {};
-    userTasks?.daily?.forEach(task => {
-      const taskConfigs: { [key: string]: any } = {
-        'feed': false,
-        'peeing_frequency': 0,
-        'poop_consistency': 2,
-        'activity': 2,
-        'grooming': false,
-      };
-      initialValues[task.id] = taskConfigs[task.id] ?? false;
-    });
+  
+  // Store task values as { taskId: { fieldId: value } }
+  const [taskValues, setTaskValues] = useState<{[taskId: string]: {[fieldId: string]: any}}>(() => {
+    const initialValues: {[taskId: string]: {[fieldId: string]: any}} = {};
     return initialValues;
   });
-  
-  // Convert user tasks to card format
-  const convertUserTaskToCard = (task: UserTask, index: number) => {
-    // Map task IDs to their card configurations
-    const taskConfigs: { [key: string]: any } = {
-      'feed': {
-        title: 'Feeding',
-        description: 'Did your cat eat today?',
-        icon: '🍽️',
-        inputType: 'yesno',
-        value: false,
-      },
-      'peeing_frequency': {
-        title: 'Peeing Frequency',
-        description: 'How many times did your cat pee today?',
-        icon: '💧',
-        inputType: 'numeric',
-        unit: 'times',
-        value: 0,
-        increment: 1,
-      },
-      'poop_consistency': {
-        title: 'Poop Consistency',
-        description: 'How was your cat\'s poop today?',
-        icon: '💩',
-        inputType: 'slider',
-        options: ['Hard & Dry', 'Firm', 'Normal', 'Soft', 'Watery Diarrhea'],
-        value: 2,
-      },
-      'activity': {
-        title: 'Activity Level',
-        description: 'How active was your cat today?',
-        icon: '🎾',
-        inputType: 'slider',
-        options: ['Very Lazy', 'Lazy', 'Normal', 'Active', 'Super Energetic'],
-        value: 2,
-      },
-      'grooming': {
-        title: 'Grooming',
-        description: 'Did you groom your cat today?',
-        icon: '🪥',
-        inputType: 'yesno',
-        value: false,
-      },
-    };
 
-    const config = taskConfigs[task.id] || {
-      title: task.name,
-      description: `Track ${task.name.toLowerCase()}`,
-      icon: '📝',
-      inputType: 'yesno',
-      value: false,
-    };
-
-    return {
-      id: task.id,
-      title: config.title,
-      description: config.description,
-      icon: config.icon,
-      type: 'daily',
-      inputType: config.inputType,
-      unit: config.unit,
-      options: config.options,
-      value: taskValues[task.id] ?? config.value,
-    };
+  // Convert user tasks to task definitions
+  const convertUserTaskToDefinition = (userTask: UserTask): TaskDefinition | null => {
+    // Try to get task by old ID first (for backward compatibility)
+    let taskDef = getTaskByOldId(userTask.id);
+    
+    // If not found, try by new ID
+    if (!taskDef) {
+      taskDef = getTaskById(userTask.id);
+    }
+    
+    // If still not found, return null (skip this task)
+    return taskDef || null;
   };
 
-  // Get daily tasks from user's selection, with fallback for incomplete onboarding
-  const dailyTasks = userTasks?.daily?.map(convertUserTaskToCard) || [
-    {
-      id: 'feed',
-      title: 'Feeding',
-      description: 'Did your cat eat today?',
-      icon: '🍽️',
-      type: 'daily',
-      inputType: 'yesno',
-      value: false,
-    },
-    {
-      id: 'activity',
-      title: 'Activity Level',
-      description: 'How active was your cat today?',
-      icon: '🎾',
-      type: 'daily',
-      inputType: 'slider',
-      options: ['Very Lazy', 'Lazy', 'Normal', 'Active', 'Super Energetic'],
-      value: 2,
-    },
-  ];
+  // Track which tasks have been marked as shown to avoid duplicate calls
+  const markedTasksRef = useRef<Set<string>>(new Set());
+
+  // Get daily tasks from user's selection, filtered by what should appear today
+  const dailyTasks = useMemo(() => {
+    if (!userTasks) {
+      return [];
+    }
+
+    // Get all tasks that should be shown today (daily, weekly, monthly combined)
+    const tasksForToday = TaskReminderService.getTasksForToday(userTasks, taskReminderState);
+    
+    // Combine all tasks that should appear today
+    const allTasksForToday = [
+      ...tasksForToday.daily,
+      ...tasksForToday.weekly,
+      ...tasksForToday.monthly,
+    ];
+
+    // Convert to task definitions
+    const taskDefinitions = allTasksForToday
+      .map(convertUserTaskToDefinition)
+      .filter((task): task is TaskDefinition => task !== null);
+
+    return taskDefinitions;
+  }, [userTasks, taskReminderState]);
+
+  // Mark tasks as shown when they're displayed (useEffect to avoid render-time state updates)
+  useEffect(() => {
+    dailyTasks.forEach((task) => {
+      if (!markedTasksRef.current.has(task.id)) {
+        markTaskAsShown(task.id);
+        markedTasksRef.current.add(task.id);
+      }
+    });
+  }, [dailyTasks, markTaskAsShown]);
+
+  // Reset completed tasks counter when tasks change
+  useEffect(() => {
+    setCompletedTasks(0);
+    setCurrentCardIndex(0);
+    // Reset task values when tasks change
+    setTaskValues({});
+  }, [dailyTasks.length]);
 
   // Get real streak data for current pet
   const streak = currentPet ? getCurrentStreak(currentPet.id) : 0;
   const totalTasks = dailyTasks.length;
 
   // Helper functions to update task values
-  const updateTaskValue = (taskId: string, value: any) => {
+  const updateTaskFieldValue = (taskId: string, fieldId: string, value: any) => {
     setTaskValues(prev => ({
       ...prev,
-      [taskId]: value
+      [taskId]: {
+        ...(prev[taskId] || {}),
+        [fieldId]: value,
+      },
     }));
   };
 
-  const getCurrentTask = () => dailyTasks[currentCardIndex];
-  const getCurrentTaskValue = () => taskValues[getCurrentTask()?.id] ?? 0;
+  const getTaskFieldValue = (taskId: string, fieldId: string): any => {
+    return taskValues[taskId]?.[fieldId];
+  };
+
+  const getCurrentTask = (): TaskDefinition | undefined => {
+    return dailyTasks[currentCardIndex];
+  };
+
+  // Check if task is complete (all required fields filled)
+  const isTaskComplete = (task: TaskDefinition): boolean => {
+    return task.fields.every(field => {
+      const value = getTaskFieldValue(task.id, field.id);
+      // Boolean fields can be false, so check for undefined/null
+      if (field.type === 'boolean') {
+        return value !== undefined && value !== null;
+      }
+      // Text fields need non-empty string
+      if (field.type === 'text') {
+        return value !== undefined && value !== null && value !== '';
+      }
+      // Other fields just need to be defined
+      return value !== undefined && value !== null;
+    });
+  };
 
 
 
   const handleNext = () => {
-    if (currentCardIndex < dailyTasks.length - 1) {
+    const currentTask = getCurrentTask();
+    if (currentTask && isTaskComplete(currentTask)) {
+      // Mark task as completed
+      markTaskAsCompleted(currentTask.id);
       setCompletedTasks(prev => prev + 1);
-      setCurrentCardIndex(prev => prev + 1);
+      
+      if (currentCardIndex < dailyTasks.length - 1) {
+        setCurrentCardIndex(prev => prev + 1);
+      } else {
+        // Last task - complete the flow
+        if (currentPet) {
+          incrementStreak(currentPet.id);
+        }
+        setCurrentCardIndex(dailyTasks.length);
+      }
     }
-    // If it's the last card, don't increment - let CardDeck handle completion
   };
 
   const handleSkip = () => {
-    setCurrentCardIndex(prev => prev + 1);
+    if (currentCardIndex < dailyTasks.length - 1) {
+      setCurrentCardIndex(prev => prev + 1);
+    } else {
+      // Last task skipped - complete the flow
+      if (currentPet) {
+        incrementStreak(currentPet.id);
+      }
+      setCurrentCardIndex(dailyTasks.length);
+    }
   };
 
   const handleComplete = () => {
-    // Count the last task as completed
-    setCompletedTasks(prev => prev + 1);
+    // This is called when all tasks are done
     // Increment streak for current pet
     if (currentPet) {
       incrementStreak(currentPet.id);
@@ -165,80 +182,280 @@ const TasksScreen: React.FC = () => {
     setCurrentCardIndex(dailyTasks.length);
   };
 
-  const renderInput = (task: any) => {
-    const currentValue = taskValues[task.id] ?? task.value;
-    
-    switch (task.inputType) {
-      case 'numeric':
+  // Render a single field input
+  const renderFieldInput = (task: TaskDefinition, field: TaskField) => {
+    const fieldValue = getTaskFieldValue(task.id, field.id);
+    const catName = currentPet?.name || 'your cat';
+
+    switch (field.type) {
+      case 'boolean':
+        // For multi-field tasks, show boolean as selectable buttons
+        // For single boolean tasks, handled by card buttons
+        const isMultiFieldTask = task.fields.length > 1;
+        if (!isMultiFieldTask) {
+          return null; // Handled by card buttons
+        }
+        
+        // Render boolean as Yes/No buttons for multi-field tasks
         return (
-          <View style={styles.numericInput}>
-            <Text style={styles.inputLabel}>Amount ({task.unit})</Text>
-            <View style={styles.numericDisplay}>
-              <Text style={styles.numericValue}>{currentValue}</Text>
-            </View>
-            <View style={styles.numericButtons}>
-              <TouchableOpacity 
-                style={[styles.numericButton, styles.buttonShadow]}
-                onPress={() => updateTaskValue(task.id, Math.max(0, currentValue - (task.increment || 1)))}
+          <View style={styles.booleanInputContainer}>
+            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <View style={styles.booleanOptions}>
+              <TouchableOpacity
+                style={[
+                  styles.booleanOption,
+                  fieldValue === true && styles.booleanOptionSelected
+                ]}
+                onPress={() => updateTaskFieldValue(task.id, field.id, true)}
               >
-                <Text style={styles.numericButtonText}>-</Text>
+                <Text style={[
+                  styles.booleanOptionText,
+                  fieldValue === true && styles.booleanOptionTextSelected
+                ]}>
+                  Yes
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.numericButton, styles.buttonShadow]}
-                onPress={() => updateTaskValue(task.id, currentValue + (task.increment || 1))}
+              <TouchableOpacity
+                style={[
+                  styles.booleanOption,
+                  fieldValue === false && styles.booleanOptionSelected
+                ]}
+                onPress={() => updateTaskFieldValue(task.id, field.id, false)}
               >
-                <Text style={styles.numericButtonText}>+</Text>
+                <Text style={[
+                  styles.booleanOptionText,
+                  fieldValue === false && styles.booleanOptionTextSelected
+                ]}>
+                  No
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         );
-      
-      case 'slider':
+
+      case 'text':
         return (
-          <View style={styles.sliderInput}>
-            <Text style={styles.inputLabel}>Select option</Text>
-            <View style={styles.sliderOptions}>
-              {task.options.map((option: string, index: number) => (
+          <View style={styles.textInputContainer}>
+            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <TextInput
+              style={styles.textInputField}
+              placeholder={`Enter ${field.label.toLowerCase()}`}
+              placeholderTextColor={COLORS.textSecondary}
+              value={fieldValue || ''}
+              onChangeText={(text) => updateTaskFieldValue(task.id, field.id, text)}
+            />
+          </View>
+        );
+
+      case 'radio':
+        return (
+          <View style={styles.radioInputContainer}>
+            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <View style={styles.radioOptions}>
+              {field.options?.map((option, index) => (
                 <TouchableOpacity
                   key={index}
                   style={[
-                    styles.sliderOption,
-                    currentValue === index && styles.sliderOptionSelected
+                    styles.radioOption,
+                    fieldValue === option.value && styles.radioOptionSelected
                   ]}
-                  onPress={() => updateTaskValue(task.id, index)}
+                  onPress={() => updateTaskFieldValue(task.id, field.id, option.value)}
                 >
                   <Text style={[
-                    styles.sliderOptionText,
-                    currentValue === index && styles.sliderOptionTextSelected
+                    styles.radioOptionText,
+                    fieldValue === option.value && styles.radioOptionTextSelected
                   ]}>
-                    {option}
+                    {option.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
         );
-      
-      case 'yesno':
-        // For yes/no tasks, buttons are handled by deck navigation
+
+      case 'scale':
+        const scale = field.scale!;
+        const min = scale.min;
+        const max = scale.max;
+        const labels = scale.labels || {};
+        
+        return (
+          <View style={styles.scaleInputContainer}>
+            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <View style={styles.scaleOptions}>
+              {Array.from({ length: max - min + 1 }, (_, i) => {
+                const value = min + i;
+                const label = labels[value.toString()] || value.toString();
+                const isSelected = fieldValue === value;
+                
+                return (
+                  <TouchableOpacity
+                    key={value}
+                    style={[
+                      styles.scaleOption,
+                      isSelected && styles.scaleOptionSelected
+                    ]}
+                    onPress={() => updateTaskFieldValue(task.id, field.id, value)}
+                  >
+                    <Text style={[
+                      styles.scaleOptionText,
+                      isSelected && styles.scaleOptionTextSelected
+                    ]}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        );
+
+      case 'choices':
+        return (
+          <View style={styles.choicesInputContainer}>
+            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <View style={styles.choicesOptions}>
+              {field.options?.map((option, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.choiceOption,
+                    fieldValue === option.value && styles.choiceOptionSelected
+                  ]}
+                  onPress={() => updateTaskFieldValue(task.id, field.id, option.value)}
+                >
+                  <Text style={[
+                    styles.choiceOptionText,
+                    fieldValue === option.value && styles.choiceOptionTextSelected
+                  ]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        );
+
+      case 'date':
+        // For MVP, we'll use a simple text input or show current date
+        // In production, you'd use a proper date picker
+        const hasDateValue = fieldValue !== undefined && fieldValue !== null;
+        const dateValue = hasDateValue 
+          ? new Date(fieldValue).toLocaleDateString() 
+          : new Date().toLocaleDateString();
+        return (
+          <View style={styles.dateInputContainer}>
+            <Text style={styles.fieldLabel}>{field.label}</Text>
+            <TouchableOpacity
+              style={[
+                styles.dateDisplay,
+                hasDateValue && styles.dateDisplaySelected
+              ]}
+              onPress={() => {
+                // Set to today's date for MVP
+                updateTaskFieldValue(task.id, field.id, new Date().toISOString());
+              }}
+            >
+              <Text style={[
+                styles.dateDisplayText,
+                hasDateValue && styles.dateDisplayTextSelected
+              ]}>
+                {dateValue}
+              </Text>
+              <Text style={[
+                styles.dateDisplayHint,
+                hasDateValue && styles.dateDisplayHintSelected
+              ]}>
+                {hasDateValue ? 'Date set ✓' : 'Tap to set today'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'object':
+        // For object types (like nail clipping paws)
+        if (field.schema) {
+          const objectValue = fieldValue || {};
+          return (
+            <View style={styles.objectInputContainer}>
+              <Text style={styles.fieldLabel}>{field.label}</Text>
+              {field.help && (
+                <Text style={styles.fieldHelp}>{field.help}</Text>
+              )}
+              <View style={styles.objectFields}>
+                {Object.keys(field.schema).map((key) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.objectField,
+                      objectValue[key] && styles.objectFieldSelected
+                    ]}
+                    onPress={() => {
+                      updateTaskFieldValue(task.id, field.id, {
+                        ...objectValue,
+                        [key]: !objectValue[key],
+                      });
+                    }}
+                  >
+                    <Text style={[
+                      styles.objectFieldText,
+                      objectValue[key] && styles.objectFieldTextSelected
+                    ]}>
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </Text>
+                    {objectValue[key] && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          );
+        }
         return null;
-      
+
       default:
         return null;
     }
   };
 
-  const renderCardForDeck = (task: any, index: number, relativeIndex: number, isTopCard: boolean) => {
+  // Render all inputs for a task
+  const renderTaskInputs = (task: TaskDefinition) => {
+    const catName = currentPet?.name || 'your cat';
+    const question = task.question.replace('{catName}', catName);
+    
+    return (
+      <ScrollView 
+        style={styles.inputsScrollView}
+        contentContainerStyle={styles.inputsScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {task.fields.map((field, index) => (
+          <View key={field.id} style={styles.fieldContainer}>
+            {renderFieldInput(task, field)}
+          </View>
+        ))}
+      </ScrollView>
+    );
+  };
+
+  const renderCardForDeck = (task: TaskDefinition, index: number, relativeIndex: number, isTopCard: boolean) => {
+    const catName = currentPet?.name || 'your cat';
+    const question = task.question.replace('{catName}', catName);
+    
+    // Check if this is a simple boolean-only task
+    const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
+    
     return (
       <View style={styles.cardContent}>
         <View style={styles.cardIcon}>
-          <Text style={styles.cardIconText}>{task.icon}</Text>
+          <Text style={styles.cardIconText}>{task.icon || '📝'}</Text>
         </View>
         
         <Text style={styles.cardTitle}>{task.title}</Text>
-        <Text style={styles.cardDescription}>{task.description}</Text>
+        <Text style={styles.cardDescription}>{question}</Text>
         
-        {renderInput(task)}
+        {!isSimpleBoolean && renderTaskInputs(task)}
       </View>
     );
   };
@@ -289,50 +506,90 @@ const TasksScreen: React.FC = () => {
             cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
             primaryButtonText={
-              getCurrentTask()?.inputType === 'yesno'
-                ? 'Yes'
-                : currentCardIndex === dailyTasks.length - 1
-                ? 'Submit'
-                : 'Next'
+              (() => {
+                const task = getCurrentTask();
+                if (!task) return 'Next';
+                const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
+                if (isSimpleBoolean) {
+                  // For boolean-only tasks, always show "Yes" even on last card
+                  return 'Yes';
+                }
+                if (currentCardIndex === dailyTasks.length - 1) return 'Submit';
+                return 'Next';
+              })()
+            }
+            primaryButtonDisabled={
+              (() => {
+                const task = getCurrentTask();
+                if (!task) return false;
+                const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
+                // For simple boolean tasks, button is always enabled
+                if (isSimpleBoolean) return false;
+                // For other tasks, disable if not complete
+                return !isTaskComplete(task);
+              })()
             }
             secondaryButtonText={
-              getCurrentTask()?.inputType === 'yesno'
-                ? 'No'
-                : 'Skip'
+              (() => {
+                const task = getCurrentTask();
+                if (!task) return 'Skip';
+                const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
+                if (isSimpleBoolean) {
+                  // For boolean-only tasks, always show "No" even on last card
+                  return 'No';
+                }
+                return 'Skip';
+              })()
             }
             onPrimaryAction={(item, index) => {
-              const task = item;
-              if (task.inputType === 'yesno') {
-                // Set value to true, count as completed, and move to next
-                updateTaskValue(task.id, true);
+              const task = item as TaskDefinition;
+              const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
+              
+              if (isSimpleBoolean) {
+                // Set boolean field to true
+                updateTaskFieldValue(task.id, task.fields[0].id, true);
+                // Mark task as completed
+                markTaskAsCompleted(task.id);
                 setCompletedTasks(prev => prev + 1);
+                
                 if (index < dailyTasks.length - 1) {
                   setCurrentCardIndex(prev => prev + 1);
                 } else {
-                  handleComplete();
+                  // Last task - complete the flow
+                  if (currentPet) {
+                    incrementStreak(currentPet.id);
+                  }
+                  setCurrentCardIndex(dailyTasks.length);
                 }
               } else {
-                // Default behavior for other tasks
-                if (index < dailyTasks.length - 1) {
+                // Check if task is complete before proceeding
+                if (isTaskComplete(task)) {
                   handleNext();
-                } else {
-                  handleComplete();
                 }
               }
             }}
             onSecondaryAction={(item, index) => {
-              const task = item;
-              if (task.inputType === 'yesno') {
-                // Set value to false, count as completed, and move to next
-                updateTaskValue(task.id, false);
+              const task = item as TaskDefinition;
+              const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
+              
+              if (isSimpleBoolean) {
+                // Set boolean field to false
+                updateTaskFieldValue(task.id, task.fields[0].id, false);
+                // Mark task as completed (even if "No")
+                markTaskAsCompleted(task.id);
                 setCompletedTasks(prev => prev + 1);
+                
                 if (index < dailyTasks.length - 1) {
                   setCurrentCardIndex(prev => prev + 1);
                 } else {
-                  handleComplete();
+                  // Last task - complete the flow
+                  if (currentPet) {
+                    incrementStreak(currentPet.id);
+                  }
+                  setCurrentCardIndex(dailyTasks.length);
                 }
               } else {
-                // Default behavior for other tasks
+                // Skip task (don't mark as completed)
                 handleSkip();
               }
             }}
@@ -597,6 +854,260 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  // New input styles
+  inputsScrollView: {
+    width: '100%',
+    maxHeight: 300,
+  },
+  inputsScrollContent: {
+    paddingVertical: SPACING.md,
+  },
+  fieldContainer: {
+    marginBottom: SPACING.lg,
+    width: '100%',
+  },
+  fieldLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  fieldHelp: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  // Text input
+  textInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  textInputField: {
+    width: '100%',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  // Radio input
+  radioInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  radioOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+  },
+  radioOption: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minWidth: 80,
+  },
+  radioOptionSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  radioOptionText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  radioOptionTextSelected: {
+    color: COLORS.surface,
+    fontWeight: '600',
+  },
+  // Scale input
+  scaleInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  scaleOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+  },
+  scaleOption: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minWidth: 80,
+  },
+  scaleOptionSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  scaleOptionText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  scaleOptionTextSelected: {
+    color: COLORS.surface,
+    fontWeight: '600',
+  },
+  // Choices input
+  choicesInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  choicesOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+  },
+  choiceOption: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minWidth: 100,
+  },
+  choiceOptionSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  choiceOptionText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+  choiceOptionTextSelected: {
+    color: COLORS.surface,
+    fontWeight: '600',
+  },
+  // Date input
+  dateInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  dateDisplay: {
+    width: '100%',
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  dateDisplaySelected: {
+    backgroundColor: COLORS.primary + '10', // 10% opacity
+    borderColor: COLORS.primary,
+  },
+  dateDisplayText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  dateDisplayTextSelected: {
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  dateDisplayHint: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+  },
+  dateDisplayHintSelected: {
+    color: COLORS.primary,
+    fontStyle: 'normal',
+  },
+  // Object input
+  objectInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  objectFields: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    width: '100%',
+  },
+  objectField: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    minWidth: 100,
+  },
+  objectFieldSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  objectFieldText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+  },
+  objectFieldTextSelected: {
+    color: COLORS.surface,
+    fontWeight: '600',
+  },
+  checkmark: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.surface,
+    fontWeight: 'bold',
+  },
+  // Boolean input (for multi-field tasks)
+  booleanInputContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  booleanOptions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  booleanOption: {
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    minWidth: 100,
+  },
+  booleanOptionSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  booleanOptionText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  booleanOptionTextSelected: {
+    color: COLORS.surface,
   },
 });
 
