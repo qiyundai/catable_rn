@@ -7,6 +7,8 @@ import { TaskReminderState } from '../services/TaskReminderService';
 interface AppStore extends AppState {
   // Task reminder state
   taskReminderState: TaskReminderState;
+  // Custom task frequencies per pet: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } }
+  taskFrequencies: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } };
   
   // Actions
   setUser: (user: User | null) => void;
@@ -23,6 +25,8 @@ interface AppStore extends AppState {
   setTaskReminderState: (state: TaskReminderState) => void;
   markTaskAsShown: (taskId: string) => void;
   markTaskAsCompleted: (taskId: string) => void;
+  setTaskFrequency: (petId: string, taskId: string, frequency: 'daily' | 'weekly' | 'monthly') => void;
+  getTaskFrequency: (petId: string, taskId: string) => 'daily' | 'weekly' | 'monthly' | null;
   
   // Streak actions
   updateStreak: (petId: string, streak: Streak) => void;
@@ -50,7 +54,7 @@ interface AppStore extends AppState {
   signOut: () => void;
 }
 
-const initialState: AppState & { taskReminderState: TaskReminderState } = {
+const initialState: AppState & { taskReminderState: TaskReminderState; taskFrequencies: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } } } = {
   user: null,
   pets: [],
   currentPet: null,
@@ -60,6 +64,7 @@ const initialState: AppState & { taskReminderState: TaskReminderState } = {
   userTasks: null,
   streaks: {},
   taskReminderState: {},
+  taskFrequencies: {},
 };
 
 export const useAppStore = create<AppStore>()(
@@ -111,6 +116,21 @@ export const useAppStore = create<AppStore>()(
         const newState = TaskReminderService.markTaskAsCompleted(taskId, state.taskReminderState);
         return { taskReminderState: newState };
       }),
+      
+      setTaskFrequency: (petId, taskId, frequency) => set((state) => ({
+        taskFrequencies: {
+          ...state.taskFrequencies,
+          [petId]: {
+            ...(state.taskFrequencies[petId] || {}),
+            [taskId]: frequency,
+          },
+        },
+      })),
+      
+      getTaskFrequency: (petId, taskId) => {
+        const state = get();
+        return state.taskFrequencies[petId]?.[taskId] || null;
+      },
       
       updateStreak: (petId, streak) => set((state) => ({
         streaks: {
@@ -268,6 +288,7 @@ export const useAppStore = create<AppStore>()(
         userTasks: state.userTasks,
         streaks: state.streaks,
         taskReminderState: state.taskReminderState,
+        taskFrequencies: state.taskFrequencies,
       }),
     }
   )

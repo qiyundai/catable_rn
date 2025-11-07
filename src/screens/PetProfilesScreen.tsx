@@ -14,11 +14,12 @@ import { RootStackParamList } from '../types';
 import { useAppStore } from '../store';
 import { Pet } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, BORDER_RADIUS } from '../constants';
+import { TASK_DEFINITIONS, getTaskById, getTaskByOldId, TaskDefinition } from '../constants/tasks';
 
 type PetProfilesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const PetProfilesScreen: React.FC = () => {
-  const { pets, currentPet, setCurrentPet } = useAppStore();
+  const { pets, currentPet, setCurrentPet, userTasks, taskReminderState } = useAppStore();
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const navigation = useNavigation<PetProfilesScreenNavigationProp>();
 
@@ -50,21 +51,94 @@ const PetProfilesScreen: React.FC = () => {
     }
   };
 
-  // Generate mock monthly data for the pet
+  // Generate real monthly data for the pet based on task completion history
   const generateMonthlyData = (petId: string) => {
-    // In a real app, this would come from the database
-    return {
-      'Feeding': '28/30 days',
-      'Peeing Frequency': '4.2 times/day',
-      'Poop Consistency': 'Normal (85%)',
-      'Activity': 'Moderate (3.1/5)',
-      'Grooming': '6 times',
-      'Sleep Breathing Frequency': '2 times',
-      'Last Nail Clipping': '2 weeks ago',
-      'Last Flea Treatment': '3 weeks ago',
-      'Last Internal Deworming': '1 month ago',
-      'Last Vet Visit': '2 months ago',
+    if (!userTasks) {
+      return {};
+    }
+
+    const data: { [key: string]: string } = {};
+    const now = new Date();
+
+    // Helper to get task definition
+    const getTaskDef = (taskId: string): TaskDefinition | null => {
+      return getTaskByOldId(taskId) || getTaskById(taskId);
     };
+
+    // Helper to format time ago
+    const formatTimeAgo = (date: Date): string => {
+      const diffMs = now.getTime() - date.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffWeeks = Math.floor(diffDays / 7);
+      const diffMonths = Math.floor(diffDays / 30);
+
+      if (diffDays === 0) return 'Today';
+      if (diffDays === 1) return '1 day ago';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffWeeks === 1) return '1 week ago';
+      if (diffWeeks < 4) return `${diffWeeks} weeks ago`;
+      if (diffMonths === 1) return '1 month ago';
+      return `${diffMonths} months ago`;
+    };
+
+    // Process daily tasks
+    userTasks.daily.forEach((userTask) => {
+      const taskDef = getTaskDef(userTask.id);
+      if (!taskDef) return;
+
+      const record = taskReminderState[userTask.id];
+      const displayName = taskDef.title;
+
+      if (record && record.lastCompleted) {
+        const lastCompleted = new Date(record.lastCompleted);
+        data[displayName] = `Last ${formatTimeAgo(lastCompleted)}`;
+      } else {
+        data[displayName] = 'N/A';
+      }
+    });
+
+    // Process weekly tasks
+    userTasks.weekly.forEach((userTask) => {
+      const taskDef = getTaskDef(userTask.id);
+      if (!taskDef) return;
+
+      const record = taskReminderState[userTask.id];
+      const displayName = taskDef.title;
+
+      if (record && record.lastCompleted) {
+        const lastCompleted = new Date(record.lastCompleted);
+        // Count how many times in the last month (4 weeks)
+        const weeksSince = Math.floor((now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60 * 24 * 7));
+        
+        if (weeksSince === 0) {
+          data[displayName] = 'This week';
+        } else if (weeksSince < 4) {
+          data[displayName] = `${formatTimeAgo(lastCompleted)}`;
+        } else {
+          data[displayName] = `Last ${formatTimeAgo(lastCompleted)}`;
+        }
+      } else {
+        data[displayName] = 'N/A';
+      }
+    });
+
+    // Process monthly tasks
+    userTasks.monthly.forEach((userTask) => {
+      const taskDef = getTaskDef(userTask.id);
+      if (!taskDef) return;
+
+      const record = taskReminderState[userTask.id];
+      const displayName = taskDef.title;
+
+      if (record && record.lastCompleted) {
+        const lastCompleted = new Date(record.lastCompleted);
+        data[displayName] = `Last ${formatTimeAgo(lastCompleted)}`;
+      } else {
+        data[displayName] = 'N/A';
+      }
+    });
+
+    return data;
   };
 
   const toggleExpanded = (petId: string) => {

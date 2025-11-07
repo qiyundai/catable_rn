@@ -7,11 +7,13 @@ import {
   Dimensions,
   TextInput,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import CardDeck from '../components/CardDeck';
+import WheelPicker from '../components/WheelPicker';
 import { UserTask } from '../types';
 import { TASK_DEFINITIONS, getTaskById, getTaskByOldId, TaskDefinition, TaskField } from '../constants/tasks';
 import TaskReminderService from '../services/TaskReminderService';
@@ -30,7 +32,13 @@ const TasksScreen: React.FC = () => {
     taskReminderState,
     markTaskAsShown,
     markTaskAsCompleted,
+    setTaskFrequency,
+    getTaskFrequency,
   } = useAppStore();
+  const [frequencyModalVisible, setFrequencyModalVisible] = useState(false);
+  const [selectedTaskForFrequency, setSelectedTaskForFrequency] = useState<TaskDefinition | null>(null);
+  const [selectedNumber, setSelectedNumber] = useState(1);
+  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [completedTasks, setCompletedTasks] = useState(0);
   
@@ -59,27 +67,40 @@ const TasksScreen: React.FC = () => {
 
   // Get daily tasks from user's selection, filtered by what should appear today
   const dailyTasks = useMemo(() => {
-    if (!userTasks) {
+    if (!userTasks || !currentPet) {
       return [];
     }
 
     // Get all tasks that should be shown today (daily, weekly, monthly combined)
-    const tasksForToday = TaskReminderService.getTasksForToday(userTasks, taskReminderState);
-    
-    // Combine all tasks that should appear today
-    const allTasksForToday = [
-      ...tasksForToday.daily,
-      ...tasksForToday.weekly,
-      ...tasksForToday.monthly,
+    // We need to check custom frequencies and filter accordingly
+    const allUserTasks = [
+      ...userTasks.daily,
+      ...userTasks.weekly,
+      ...userTasks.monthly,
     ];
 
+    // Filter tasks based on their actual frequency (custom or default)
+    const tasksForToday = allUserTasks.filter((userTask) => {
+      const taskDef = getTaskByOldId(userTask.id) || getTaskById(userTask.id);
+      if (!taskDef) return false;
+
+      // Get the actual frequency (custom or default)
+      const actualFrequency = getTaskFrequency(currentPet.id, userTask.id) || taskDef.recurringCycle || 'daily';
+      
+      // Check if task should be shown today based on its actual frequency
+      return TaskReminderService.shouldShowTaskToday(
+        { ...userTask, recurringCycle: actualFrequency },
+        taskReminderState
+      );
+    });
+
     // Convert to task definitions
-    const taskDefinitions = allTasksForToday
+    const taskDefinitions = tasksForToday
       .map(convertUserTaskToDefinition)
       .filter((task): task is TaskDefinition => task !== null);
 
     return taskDefinitions;
-  }, [userTasks, taskReminderState]);
+  }, [userTasks, taskReminderState, currentPet, getTaskFrequency]);
 
   // Mark tasks as shown when they're displayed (useEffect to avoid render-time state updates)
   useEffect(() => {
@@ -169,6 +190,17 @@ const TasksScreen: React.FC = () => {
         incrementStreak(currentPet.id);
       }
       setCurrentCardIndex(dailyTasks.length);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (currentCardIndex > 0) {
+      const previousIndex = currentCardIndex - 1;
+      setCurrentCardIndex(previousIndex);
+      // Decrement completed tasks if we're going back past a completed task
+      if (completedTasks > 0) {
+        setCompletedTasks(prev => Math.max(0, prev - 1));
+      }
     }
   };
 
@@ -439,23 +471,114 @@ const TasksScreen: React.FC = () => {
     );
   };
 
+  // Get fun fact for specific tasks
+  const getFunFact = (taskId: string): string | null => {
+    const funFacts: { [key: string]: string } = {
+      'pee-frequency': 'Most healthy adult cats urinate 2–4 times a day.',
+      'sleeping-resp-rate': 'A healthy cat breathes 20 - 30 times per minute during sleep. Tracking this helps spot early signs of heart problems.',
+    };
+    return funFacts[taskId] || null;
+  };
+
+  // Convert number + period to frequency
+  const convertToFrequency = (number: number, period: 'day' | 'week' | 'month'): 'daily' | 'weekly' | 'monthly' => {
+    if (period === 'day' && number === 1) return 'daily';
+    if (period === 'week' && number === 1) return 'weekly';
+    if (period === 'month' && number === 1) return 'monthly';
+    // For now, map to closest standard frequency
+    if (period === 'day') return 'daily';
+    if (period === 'week') return 'weekly';
+    return 'monthly';
+  };
+
+  // Convert frequency to number + period
+  const convertFromFrequency = (frequency: 'daily' | 'weekly' | 'monthly'): { number: number; period: 'day' | 'week' | 'month' } => {
+    switch (frequency) {
+      case 'daily':
+        return { number: 1, period: 'day' };
+      case 'weekly':
+        return { number: 1, period: 'week' };
+      case 'monthly':
+        return { number: 1, period: 'month' };
+    }
+  };
+
+  const handleFrequencyChange = () => {
+    if (selectedTaskForFrequency && currentPet) {
+      const frequency = convertToFrequency(selectedNumber, selectedPeriod);
+      setTaskFrequency(currentPet.id, selectedTaskForFrequency.id, frequency);
+      setFrequencyModalVisible(false);
+      setSelectedTaskForFrequency(null);
+    }
+  };
+
+  // Initialize picker values when modal opens
+  useEffect(() => {
+    if (selectedTaskForFrequency && frequencyModalVisible) {
+      const currentFreq = getCurrentFrequency(selectedTaskForFrequency);
+      const { number, period } = convertFromFrequency(currentFreq);
+      setSelectedNumber(number);
+      setSelectedPeriod(period);
+    }
+  }, [selectedTaskForFrequency, frequencyModalVisible]);
+
+  const getCurrentFrequency = (task: TaskDefinition): 'daily' | 'weekly' | 'monthly' => {
+    if (!currentPet) return task.recurringCycle || 'daily';
+    const customFrequency = getTaskFrequency(currentPet.id, task.id);
+    return customFrequency || task.recurringCycle || 'daily';
+  };
+
   const renderCardForDeck = (task: TaskDefinition, index: number, relativeIndex: number, isTopCard: boolean) => {
     const catName = currentPet?.name || 'your cat';
     const question = task.question.replace('{catName}', catName);
+    const funFact = getFunFact(task.id);
+    const currentFrequency = getCurrentFrequency(task);
     
     // Check if this is a simple boolean-only task
     const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
     
     return (
       <View style={styles.cardContent}>
+        {/* Go back button - only on top card and not on first card */}
+        {isTopCard && currentCardIndex > 0 && (
+          <TouchableOpacity
+            style={styles.goBackButton}
+            onPress={handleGoBack}
+          >
+            <Text style={styles.goBackButtonText}>← go back</Text>
+          </TouchableOpacity>
+        )}
+        
+        {/* Frequency button - only on top card */}
+        {isTopCard && (
+          <TouchableOpacity
+            style={styles.frequencyButton}
+            onPress={() => {
+              setSelectedTaskForFrequency(task);
+              setFrequencyModalVisible(true);
+            }}
+          >
+            <Text style={styles.frequencyButtonText}>⚙️</Text>
+          </TouchableOpacity>
+        )}
+        
         <View style={styles.cardIcon}>
           <Text style={styles.cardIconText}>{task.icon || '📝'}</Text>
         </View>
         
-        <Text style={styles.cardTitle}>{task.title}</Text>
-        <Text style={styles.cardDescription}>{question}</Text>
+        {/* Use question as the title */}
+        <Text style={styles.cardTitle}>{question}</Text>
         
+        {/* Render inputs for non-simple-boolean tasks */}
         {!isSimpleBoolean && renderTaskInputs(task)}
+        
+        {/* Fun fact section */}
+        {funFact && (
+          <View style={styles.funFactContainer}>
+            <Text style={styles.funFactLabel}>Did you know?</Text>
+            <Text style={styles.funFactText}>{funFact}</Text>
+          </View>
+        )}
       </View>
     );
   };
@@ -596,6 +719,77 @@ const TasksScreen: React.FC = () => {
           />
         )}
       </View>
+
+      {/* Frequency Selection Modal */}
+      <Modal
+        visible={frequencyModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setFrequencyModalVisible(false);
+          setSelectedTaskForFrequency(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>This card pops up every:</Text>
+            {selectedTaskForFrequency && (
+              <>
+                <View style={styles.pickerContainer}>
+                  <View style={styles.pickerColumn}>
+                    <WheelPicker
+                      key={`number-${selectedPeriod}`}
+                      items={Array.from({ length: selectedPeriod === 'day' ? 30 : 12 }, (_, i) => ({
+                        label: (i + 1).toString(),
+                        value: i + 1,
+                      }))}
+                      selectedIndex={Math.min(selectedNumber - 1, (selectedPeriod === 'day' ? 30 : 12) - 1)}
+                      onSelectionChange={(index) => setSelectedNumber(index + 1)}
+                    />
+                  </View>
+                  <View style={styles.pickerColumn}>
+                    <WheelPicker
+                      items={[
+                        { label: 'day(s)', value: 0 },
+                        { label: 'week(s)', value: 1 },
+                        { label: 'month(s)', value: 2 },
+                      ]}
+                      selectedIndex={selectedPeriod === 'day' ? 0 : selectedPeriod === 'week' ? 1 : 2}
+                      onSelectionChange={(index) => {
+                        const periods: ('day' | 'week' | 'month')[] = ['day', 'week', 'month'];
+                        const newPeriod = periods[index];
+                        setSelectedPeriod(newPeriod);
+                        // Adjust number range based on period
+                        const maxNumber = newPeriod === 'day' ? 30 : 12;
+                        if (selectedNumber > maxNumber) {
+                          setSelectedNumber(maxNumber);
+                        }
+                      }}
+                    />
+                  </View>
+                </View>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={styles.modalCancelButton}
+                    onPress={() => {
+                      setFrequencyModalVisible(false);
+                      setSelectedTaskForFrequency(null);
+                    }}
+                  >
+                    <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalSaveButton}
+                    onPress={handleFrequencyChange}
+                  >
+                    <Text style={styles.modalSaveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -712,14 +906,29 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.h2,
     color: COLORS.text,
     textAlign: 'center',
-    marginBottom: SPACING.md,
-  },
-  cardDescription: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
     marginBottom: SPACING.xl,
-    lineHeight: 24,
+    lineHeight: 28,
+  },
+  funFactContainer: {
+    marginTop: SPACING.lg,
+    paddingTop: SPACING.md,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    width: '100%',
+  },
+  funFactLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginBottom: SPACING.xs,
+    textAlign: 'center',
+  },
+  funFactText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 18,
   },
   // Input styles
   inputLabel: {
@@ -1108,6 +1317,110 @@ const styles = StyleSheet.create({
   },
   booleanOptionTextSelected: {
     color: COLORS.surface,
+  },
+  // Go back button
+  goBackButton: {
+    position: 'absolute',
+    top: SPACING.md,
+    left: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    zIndex: 10,
+  },
+  goBackButtonText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  // Frequency button
+  frequencyButton: {
+    position: 'absolute',
+    top: SPACING.md,
+    right: SPACING.md,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    zIndex: 10,
+  },
+  frequencyButtonText: {
+    fontSize: 18,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    padding: SPACING.xl,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    ...TYPOGRAPHY.h2,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 200,
+    marginVertical: SPACING.xl,
+    gap: SPACING.md,
+  },
+  pickerColumn: {
+    flex: 1,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: SPACING.md,
+    marginTop: SPACING.lg,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  modalSaveButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+  },
+  modalSaveButtonText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.surface,
+    fontWeight: '600',
   },
 });
 
