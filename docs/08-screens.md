@@ -58,6 +58,9 @@ Screen components in `src/screens/`. This document describes each screen's purpo
 - Progress bar (tasks completed / total)
 - Card deck interface for going through daily tasks
 - Filters tasks based on what should appear today (daily/weekly/monthly)
+- **Custom Task Frequencies**: Gear icon (⚙️) button on top-right of each card to customize reminder frequency per task per pet
+- **Go Back Button**: "← go back" button on top-left (when not on first card) to review/edit previous tasks
+- **Fun Facts**: Educational "Did you know?" facts displayed at bottom of specific task cards
 - Two-button navigation at bottom of each card
 - Input types:
   - **Boolean**: Yes/No buttons (uses deck buttons)
@@ -65,18 +68,24 @@ Screen components in `src/screens/`. This document describes each screen's purpo
   - **Radio**: Single selection from options
   - **Scale**: Numeric scale with labels
   - **Choices**: Predefined choice options
-  - **Date**: Date selection
+  - **Date**: Date selection with visual selected state
   - **Object**: Complex nested fields (e.g., nail clipping paws)
 - Button behavior:
   - For boolean-only tasks: "Yes" and "No" buttons
-  - For other tasks: "Next"/"Submit" and "Skip" buttons
+  - For other tasks: "Next"/"Submit" (disabled until task complete) and "Skip" buttons
 - Completion screen when all tasks done
 - Increments streak when all tasks completed
 - Marks tasks as shown and completed in reminder state
 
+**Card Display**:
+- Task question (with cat name) is the main card heading
+- No description text for most tasks (question is sufficient)
+- Fun facts appear at bottom for specific tasks (pee frequency, breathing rate)
+
 **Data Flow**:
 - Reads `userTasks` from store
-- Filters using `TaskReminderService.getTasksForToday()`
+- Checks `taskFrequencies` for custom frequencies (per pet)
+- Filters using `TaskReminderService.getTasksForToday()` with actual frequency (custom or default)
 - Maps tasks to task definitions from `constants/tasks.ts`
 - Updates local state for task values
 - Calls `incrementStreak()` and `markTaskAsCompleted()` when completed
@@ -91,6 +100,11 @@ Screen components in `src/screens/`. This document describes each screen's purpo
 **Features**:
 - Grid/list of all pet profile cards
 - Each card shows: name, avatar, basic info
+- Expandable cards with "More Info" section showing:
+  - Real task completion data (last completed dates)
+  - Only shows rows for tasks being tracked for that pet
+  - Displays "N/A" if task hasn't been completed
+  - Shows relative time (e.g., "2 days ago", "3 weeks ago")
 - "Add Pet" button (navigates to ManagePet)
 - Tap pet to view/edit (PetProfileScreen)
 - Swipe actions for deletion (planned)

@@ -6,6 +6,7 @@ export interface User {
   userName: string;
   region: string;
   language: 'en' | 'zh' | 'ja';
+  avatar?: string;
   isGuest: boolean;
   createdAt: Date;
   updatedAt: Date;

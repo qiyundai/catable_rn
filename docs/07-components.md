@@ -140,12 +140,48 @@ Reusable UI components in `src/components/`. This document describes each compon
 ### WheelPicker
 **Location**: `src/components/WheelPicker.tsx`
 
-**Purpose**: Multi-column picker (like time picker)
+**Purpose**: Scrollable wheel picker component for selecting values (like iOS picker)
 
 **Props**:
-- `items`: Array of picker items with label and value
-- `selectedIndex`: Currently selected index
-- `onSelectionChange`: Callback with new index
+- `items`: Array of `WheelPickerItem` objects with `label` and `value`
+- `selectedIndex`: Currently selected index (0-based)
+- `onSelectionChange(index)`: Callback when selection changes
+- `width?`: Optional width (default: 80)
+- `height?`: Optional height (default: 200)
+
+**Features**:
+- Smooth scrolling with momentum
+- Automatic snapping to nearest item
+- Self-contained styling (no external style dependencies)
+- Proper initialization to selected value
+- Supports jumping to far values without interference
+
+**Usage**:
+```typescript
+<WheelPicker
+  items={[
+    { label: '1', value: 1 },
+    { label: '2', value: 2 },
+    // ...
+  ]}
+  selectedIndex={selectedIndex}
+  onSelectionChange={(index) => setSelectedIndex(index)}
+  width={100}
+/>
+```
+
+**Multi-Column Layout**:
+For multi-column pickers, use multiple `WheelPicker` components side-by-side:
+```typescript
+<View style={{ flexDirection: 'row' }}>
+  <View style={{ flex: 1 }}>
+    <WheelPicker items={numberItems} selectedIndex={numIndex} ... />
+  </View>
+  <View style={{ flex: 1 }}>
+    <WheelPicker items={periodItems} selectedIndex={periodIndex} ... />
+  </View>
+</View>
+```
 
 **Usage**: Time picker (hour, minute, AM/PM), date pickers, age picker.
 

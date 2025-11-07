@@ -15,7 +15,7 @@ import ProgressBar from '../components/ProgressBar';
 import CardDeck from '../components/CardDeck';
 import WheelPicker from '../components/WheelPicker';
 import { UserTask } from '../types';
-import { TASK_DEFINITIONS, getTaskById, getTaskByOldId, TaskDefinition, TaskField } from '../constants/tasks';
+import { getTaskById, getTaskByOldId, TaskDefinition, TaskField } from '../constants/tasks';
 import TaskReminderService from '../services/TaskReminderService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -532,7 +532,6 @@ const TasksScreen: React.FC = () => {
     const catName = currentPet?.name || 'your cat';
     const question = task.question.replace('{catName}', catName);
     const funFact = getFunFact(task.id);
-    const currentFrequency = getCurrentFrequency(task);
     
     // Check if this is a simple boolean-only task
     const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
@@ -583,8 +582,10 @@ const TasksScreen: React.FC = () => {
     );
   };
 
-  // Check if all tasks are completed
-  const allTasksCompleted = currentCardIndex >= dailyTasks.length;
+  // Check if all tasks are completed (only if there are tasks)
+  const allTasksCompleted = dailyTasks.length > 0 && currentCardIndex >= dailyTasks.length;
+  const hasNoPets = !currentPet;
+  const hasNoTasks = dailyTasks.length === 0;
 
   return (
     <View style={styles.container}>
@@ -594,19 +595,43 @@ const TasksScreen: React.FC = () => {
           <Text style={styles.streakNumber}>{streak}</Text>
           <Text style={styles.streakLabel}>Day Streak</Text>
         </View>
-        <View style={styles.progressContainer}>
-          <ProgressBar 
-            current={completedTasks} 
-            total={totalTasks}
-            showText={true}
-            height={16}
-          />
-        </View>
+        {totalTasks > 0 && (
+          <View style={styles.progressContainer}>
+            <ProgressBar 
+              current={completedTasks} 
+              total={totalTasks}
+              showText={true}
+              height={16}
+            />
+          </View>
+        )}
       </View>
 
       {/* Card Deck */}
       <View style={styles.cardDeck}>
-        {allTasksCompleted ? (
+        {hasNoPets ? (
+          <View style={styles.completionContainer}>
+            <Text style={styles.completionEmoji}>🐱</Text>
+            <Text style={styles.completionTitle}>No pet selected</Text>
+            <Text style={styles.completionDescription}>
+              Please add a pet in your profile to start tracking tasks.
+            </Text>
+            <Text style={styles.completionSubtext}>
+              Go to Pet Profiles to add your first cat! 🐾
+            </Text>
+          </View>
+        ) : hasNoTasks ? (
+          <View style={styles.completionContainer}>
+            <Text style={styles.completionEmoji}>📋</Text>
+            <Text style={styles.completionTitle}>No tasks to complete</Text>
+            <Text style={styles.completionDescription}>
+              You haven't selected any tasks to track for {currentPet?.name || 'your cat'} yet.
+            </Text>
+            <Text style={styles.completionSubtext}>
+              Complete onboarding to set up your daily tasks! ✨
+            </Text>
+          </View>
+        ) : allTasksCompleted ? (
           <View style={styles.completionContainer}>
             <Text style={styles.completionEmoji}>🎉</Text>
             <Text style={styles.completionTitle}>All tasks completed!</Text>
@@ -889,9 +914,8 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: SPACING.xl,
-    paddingBottom: SPACING.xl + 60, // Extra padding for buttons (60px button height)
+    paddingBottom: SPACING.xl + 80, // Extra padding for buttons (60px button height + 20px spacing)
     alignItems: 'center',
-    justifyContent: 'center',
   },
   cardIcon: {
     width: 80,

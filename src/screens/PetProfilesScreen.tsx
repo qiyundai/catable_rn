@@ -148,7 +148,7 @@ const PetProfilesScreen: React.FC = () => {
 
   const handleExportReport = () => {
     // TODO: Implement export functionality
-    console.log('Export report functionality not implemented yet');
+    // Export functionality will be implemented in a future update
   };
 
   const renderPetCard = ({ item }: { item: Pet }) => {

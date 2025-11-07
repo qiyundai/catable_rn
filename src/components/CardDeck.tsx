@@ -83,10 +83,15 @@ const CardDeck: React.FC<CardDeckProps> = ({
       transform: [
         { scale: scaleFactor },
       ],
+    };
+
+    const cardInnerStyle = {
+      width: cardWidth,
+      height: cardHeight,
       backgroundColor: COLORS.surface,
       borderRadius: 20,
       ...SHADOWS.medium,
-      overflow: 'visible' as const,
+      overflow: 'hidden' as const,
     };
 
     return (
@@ -94,8 +99,10 @@ const CardDeck: React.FC<CardDeckProps> = ({
         key={item.id || index}
         style={cardStyle}
       >
-        {renderCard(item, index, relativeIndex, isTopCard)}
-        {/* Buttons only on top card */}
+        <View style={cardInnerStyle}>
+          {renderCard(item, index, relativeIndex, isTopCard)}
+        </View>
+        {/* Buttons only on top card - positioned outside card to hang off bottom */}
         {isTopCard && (
           <View style={styles.buttonContainer}>
             <TouchableOpacity

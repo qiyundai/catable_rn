@@ -24,6 +24,7 @@ interface AppStore {
   // Tasks & Logs
   userTasks: UserTasks | null;
   taskReminderState: TaskReminderState;
+  taskFrequencies: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } };
   
   // Gamification
   streaks: { [petId: string]: Streak };
@@ -52,6 +53,8 @@ interface AppStore {
 - `setTaskReminderState(state)`: Set task reminder tracking state
 - `markTaskAsShown(taskId)`: Mark task as shown today
 - `markTaskAsCompleted(taskId)`: Mark task as completed
+- `setTaskFrequency(petId, taskId, frequency)`: Set custom reminder frequency for a task (per pet)
+- `getTaskFrequency(petId, taskId)`: Get custom frequency for a task (returns null if not set)
 
 ### Streaks
 - `updateStreak(petId, streak)`: Replace streak data
@@ -78,6 +81,7 @@ Only these fields are persisted to AsyncStorage:
 - `userTasks`
 - `streaks`
 - `taskReminderState`
+- `taskFrequencies`
 
 ### Persistence Key
 Storage key: `'catable-storage'`

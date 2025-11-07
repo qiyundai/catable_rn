@@ -611,7 +611,12 @@ const OnboardingScreen: React.FC = () => {
       case 'cat_name_2':
       case 'cat_name_3':
         return (
-          <View style={styles.cardContent}>
+          <ScrollView 
+            style={styles.cardContentScroll}
+            contentContainerStyle={styles.cardContent}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
             <View style={styles.cardIcon}>
               <Text style={styles.cardIconText}>📝</Text>
             </View>
@@ -638,7 +643,7 @@ const OnboardingScreen: React.FC = () => {
                 </>
               )}
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         );
 
       case 'cat_info':
@@ -646,7 +651,12 @@ const OnboardingScreen: React.FC = () => {
       case 'cat_info_2':
       case 'cat_info_3':
         return (
-          <View style={styles.cardContent}>
+          <ScrollView 
+            style={styles.cardContentScroll}
+            contentContainerStyle={styles.cardContent}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
             <View style={styles.cardIcon}>
               <Text style={styles.cardIconText}>ℹ️</Text>
             </View>
@@ -705,7 +715,7 @@ const OnboardingScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          </View>
+          </ScrollView>
         );
 
       case 'add_another':
@@ -1187,11 +1197,13 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   cardContent: {
-    flex: 1,
     padding: SPACING.xl,
-    paddingBottom: SPACING.xl + 60, // Extra padding for buttons (60px button height)
+    paddingBottom: SPACING.xl + 80, // Extra padding for buttons (60px button height + 20px spacing)
     alignItems: 'center',
-    justifyContent: 'center',
+    minHeight: '100%',
+  },
+  cardContentScroll: {
+    flex: 1,
   },
   cardIcon: {
     width: 80,

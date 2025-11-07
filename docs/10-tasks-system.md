@@ -93,18 +93,43 @@ Tracks for each task:
 
 TasksScreen filters tasks based on what should appear today:
 1. Gets all user tasks from store
-2. Uses `TaskReminderService.getTasksForToday()` to filter
-3. Combines daily, weekly, and monthly tasks that are due
-4. Converts to task definitions
-5. Marks tasks as shown when displayed
+2. Checks custom task frequencies (per pet) if set
+3. Uses actual frequency (custom or default) to filter tasks
+4. Uses `TaskReminderService.shouldShowTaskToday()` to determine if task is due
+5. Converts to task definitions
+6. Marks tasks as shown when displayed
+
+### Custom Task Frequencies
+
+Users can customize reminder frequency per task per pet:
+- Accessible via gear icon (⚙️) button on top-right of each card
+- Modal with 2-column wheel picker: number (1-30 for days, 1-12 for weeks/months) + period (day(s)/week(s)/month(s))
+- Stored in `taskFrequencies` state: `{ [petId]: { [taskId]: frequency } }`
+- Overrides default task frequency when set
+- Persisted to AsyncStorage
 
 ### Task Completion
 
 When a task is completed:
 1. Task values are saved
 2. Task is marked as completed in reminder state
-3. Streak is incremented (if all tasks done)
-4. Next task appears (or completion screen)
+3. Completed tasks counter increments
+4. Streak is incremented (if all tasks done)
+5. Next task appears (or completion screen)
+
+### Navigation
+
+- **Go Back Button**: "← go back" button on top-left of cards (when not on first card)
+  - Allows users to review/edit previous task answers
+  - Decrements completed tasks counter
+  - Task values persist when going back
+
+### Card Display
+
+- **Question as Title**: Task question (with cat name) is the main card heading
+- **Fun Facts**: Some tasks display "Did you know?" facts at the bottom:
+  - Pee Frequency: "Most healthy adult cats urinate 2–4 times a day."
+  - Breathing Rate: "A healthy cat breathes 20 - 30 times per minute during sleep. Tracking this helps spot early signs of heart problems."
 
 ### Input Rendering
 
@@ -113,7 +138,7 @@ TasksScreen renders appropriate inputs based on field types:
 - Text fields: TextInput
 - Radio/Choices: Selectable option buttons
 - Scale: Numeric scale buttons
-- Date: Date picker (MVP: sets to today)
+- Date: Date picker (MVP: sets to today) with selected state
 - Object: Toggle buttons for nested fields
 
 ## Onboarding Integration
