@@ -520,7 +520,7 @@ const TasksScreen: React.FC = () => {
       setSelectedNumber(number);
       setSelectedPeriod(period);
     }
-  }, [selectedTaskForFrequency, frequencyModalVisible]);
+  }, [selectedTaskForFrequency?.id, frequencyModalVisible]);
 
   const getCurrentFrequency = (task: TaskDefinition): 'daily' | 'weekly' | 'monthly' => {
     if (!currentPet) return task.recurringCycle || 'daily';
@@ -738,17 +738,19 @@ const TasksScreen: React.FC = () => {
                 <View style={styles.pickerContainer}>
                   <View style={styles.pickerColumn}>
                     <WheelPicker
-                      key={`number-${selectedPeriod}`}
+                      key={`number-${selectedPeriod}-${frequencyModalVisible}`}
                       items={Array.from({ length: selectedPeriod === 'day' ? 30 : 12 }, (_, i) => ({
                         label: (i + 1).toString(),
                         value: i + 1,
                       }))}
                       selectedIndex={Math.min(selectedNumber - 1, (selectedPeriod === 'day' ? 30 : 12) - 1)}
                       onSelectionChange={(index) => setSelectedNumber(index + 1)}
+                      width={100}
                     />
                   </View>
                   <View style={styles.pickerColumn}>
                     <WheelPicker
+                      key={`period-${frequencyModalVisible}`}
                       items={[
                         { label: 'day(s)', value: 0 },
                         { label: 'week(s)', value: 1 },
@@ -765,6 +767,7 @@ const TasksScreen: React.FC = () => {
                           setSelectedNumber(maxNumber);
                         }
                       }}
+                      width={120}
                     />
                   </View>
                 </View>

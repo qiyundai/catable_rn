@@ -1,89 +1,138 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { COLORS, TYPOGRAPHY } from '../constants';
 
-interface WheelPickerProps {
-  items: { label: string; value: number }[];
-  selectedIndex: number;
-  onSelectionChange: (index: number) => void;
+export interface WheelPickerItem {
+  label: string;
+  value: number | string;
 }
 
-const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelectionChange }) => {
+interface WheelPickerProps {
+  items: WheelPickerItem[];
+  selectedIndex: number;
+  onSelectionChange: (index: number) => void;
+  width?: number;
+  height?: number;
+}
+
+const WheelPicker: React.FC<WheelPickerProps> = ({ 
+  items, 
+  selectedIndex, 
+  onSelectionChange,
+  width = 80,
+  height = 200,
+}) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const itemHeight = 40;
-  const visibleItems = 5; // Show 5 items (2 above, 1 center, 2 below)
-  const containerHeight = itemHeight * visibleItems;
-  const totalContentHeight = items.length * itemHeight + (itemHeight * 4); // Items + padding
-  const isProgrammaticScroll = useRef(false);
+  const paddingTop = itemHeight * 2; // 2 items above center
+  const paddingBottom = itemHeight * 2; // 2 items below center
+  const isUserScrolling = useRef(false);
+  const isInitialized = useRef(false);
+
+  // Calculate scroll position for an index
+  const getScrollYForIndex = (index: number): number => {
+    return index * itemHeight;
+  };
+
+  // Initial scroll to selected index (no animation) - only once
+  useEffect(() => {
+    if (!isInitialized.current && items.length > 0 && selectedIndex >= 0 && selectedIndex < items.length) {
+      // Small delay to ensure layout is complete
+      const timer = setTimeout(() => {
+        const scrollY = getScrollYForIndex(selectedIndex);
+        scrollViewRef.current?.scrollTo({
+          y: scrollY,
+          animated: false,
+        });
+        isInitialized.current = true;
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [items.length]); // Re-initialize if items change
+
+  // Handle programmatic selectedIndex changes (with animation) - only after initialization
+  useEffect(() => {
+    if (isInitialized.current && !isUserScrolling.current && items.length > 0 && selectedIndex >= 0 && selectedIndex < items.length) {
+      const scrollY = getScrollYForIndex(selectedIndex);
+      scrollViewRef.current?.scrollTo({
+        y: scrollY,
+        animated: true,
+      });
+    }
+  }, [selectedIndex]);
+
+  const handleScrollBeginDrag = () => {
+    isUserScrolling.current = true;
+  };
 
   const handleScroll = (event: any) => {
+    if (!isInitialized.current) return;
+    
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / itemHeight);
     
-    // Don't call onSelectionChange during programmatic scrolls
-    if (!isProgrammaticScroll.current && index >= 0 && index < items.length && index !== selectedIndex) {
+    // Update selection during scroll (but don't interfere with scrolling)
+    if (index >= 0 && index < items.length && index !== selectedIndex) {
       onSelectionChange(index);
     }
   };
 
   const handleMomentumScrollEnd = (event: any) => {
+    isUserScrolling.current = false;
+    
     const y = event.nativeEvent.contentOffset.y;
     const index = Math.round(y / itemHeight);
     
-    // Only call onSelectionChange if this wasn't a programmatic scroll
-    if (!isProgrammaticScroll.current && index >= 0 && index < items.length) {
-      onSelectionChange(index);
+    // Snap to nearest item
+    if (index >= 0 && index < items.length) {
+      const targetY = getScrollYForIndex(index);
+      const currentY = event.nativeEvent.contentOffset.y;
+      
+      // Only snap if we're significantly off (avoid unnecessary animations)
+      if (Math.abs(currentY - targetY) > 2) {
+        scrollViewRef.current?.scrollTo({
+          y: targetY,
+          animated: true,
+        });
+      }
+      
+      // Update selection if changed
+      if (index !== selectedIndex) {
+        onSelectionChange(index);
+      }
     }
-    
-    // Reset the flag
-    isProgrammaticScroll.current = false;
   };
 
-  const scrollToIndex = (index: number) => {
-    // Account for the paddingVertical: 80 (2 items above + 2 items below)
-    const scrollY = index * itemHeight; // Don't subtract padding - scroll to the actual position
-    
-    // Set flag to indicate this is a programmatic scroll
-    isProgrammaticScroll.current = true;
-    
-    scrollViewRef.current?.scrollTo({
-      y: scrollY,
-      animated: true,
-    });
-    
-    // Reset the flag after animation completes
-    setTimeout(() => {
-      isProgrammaticScroll.current = false;
-    }, 500); // Give enough time for animation to complete
-  };
-
-  // Scroll to selected index when component mounts or selectedIndex changes
-  React.useEffect(() => {
-    scrollToIndex(selectedIndex);
-  }, [selectedIndex]);
+  const totalContentHeight = items.length * itemHeight + paddingTop + paddingBottom;
 
   return (
-    <View style={styles.wheelPickerContainer}>
-      <View style={styles.wheelPickerMask}>
+    <View style={[styles.container, { width, height }]}>
+      <View style={[styles.mask, { width, height }]}>
         <ScrollView
           ref={scrollViewRef}
           showsVerticalScrollIndicator={false}
           snapToInterval={itemHeight}
           decelerationRate="fast"
+          onScrollBeginDrag={handleScrollBeginDrag}
           onMomentumScrollEnd={handleMomentumScrollEnd}
           onScroll={handleScroll}
           scrollEventThrottle={16}
-          contentContainerStyle={styles.wheelPickerContent}
-          style={styles.wheelPickerScrollView}
+          contentContainerStyle={[
+            styles.content,
+            { 
+              paddingTop,
+              paddingBottom,
+              minHeight: totalContentHeight,
+            }
+          ]}
+          style={[styles.scrollView, { height }]}
           nestedScrollEnabled={true}
-          scrollEnabled={true}
         >
-          {/* Actual items */}
           {items.map((item, index) => (
-            <View key={index} style={styles.wheelPickerItem}>
+            <View key={index} style={styles.item}>
               <Text style={[
-                styles.wheelPickerItemText,
-                index === selectedIndex && styles.wheelPickerItemTextSelected
+                styles.itemText,
+                index === selectedIndex && styles.itemTextSelected
               ]}>
                 {item.label}
               </Text>
@@ -92,8 +141,8 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
         </ScrollView>
         
         {/* Selection indicator overlay */}
-        <View style={styles.wheelPickerSelectionOverlay}>
-          <View style={styles.wheelPickerSelectionLine} />
+        <View style={[styles.overlay, { width, height }]}>
+          <View style={styles.selectionLine} />
         </View>
       </View>
     </View>
@@ -101,40 +150,35 @@ const WheelPicker: React.FC<WheelPickerProps> = ({ items, selectedIndex, onSelec
 };
 
 const styles = StyleSheet.create({
-  wheelPickerContainer: {
-    height: 200,
-    width: 80,
+  container: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wheelPickerMask: {
-    height: 200,
-    width: 80,
+  mask: {
     overflow: 'hidden',
     position: 'relative',
   },
-  wheelPickerScrollView: {
-    height: 200,
+  scrollView: {
+    flex: 1,
   },
-  wheelPickerContent: {
-    paddingVertical: 80, // Center the visible items (2 items above + 2 items below = 80px)
-    minHeight: 200 + 160, // Ensure content is taller than ScrollView + padding
+  content: {
+    // Padding handled dynamically
   },
-  wheelPickerItem: {
+  item: {
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  wheelPickerItemText: {
+  itemText: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
     fontSize: 18,
   },
-  wheelPickerItemTextSelected: {
+  itemTextSelected: {
     color: COLORS.text,
     fontWeight: '600',
   },
-  wheelPickerSelectionOverlay: {
+  overlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -144,7 +188,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     pointerEvents: 'none',
   },
-  wheelPickerSelectionLine: {
+  selectionLine: {
     width: '100%',
     height: 40,
     borderTopWidth: 1,
