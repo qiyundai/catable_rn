@@ -255,8 +255,8 @@ const PetProfilesScreen: React.FC = () => {
   };
 
   const handleAddPet = () => {
-    // Navigate to manage pet screen
-    navigation.getParent()?.navigate('ManagePet');
+    // Navigate to onboarding flow to add a new cat with task selection
+    navigation.getParent()?.navigate('Onboarding', { addNewCat: true });
   };
 
   return (

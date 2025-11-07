@@ -96,7 +96,7 @@ export interface OnboardingStep {
 // Navigation types
 export type RootStackParamList = {
   Auth: undefined;
-  Onboarding: undefined;
+  Onboarding: { addNewCat?: boolean } | undefined;
   Main: undefined;
   ManagePet: { petId?: string };
   PetProfile: { petId: string };

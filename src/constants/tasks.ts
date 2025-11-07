@@ -107,12 +107,7 @@ export const TASK_DEFINITIONS: TaskDefinition[] = [
         type: 'scale',
         scale: {
           min: 1,
-          max: 3,
-          labels: {
-            '1': 'Loose',
-            '2': 'Normal',
-            '3': 'Hard',
-          },
+          max: 5,
         },
         valueType: 'number',
       },

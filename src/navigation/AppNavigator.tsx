@@ -247,6 +247,11 @@ const AppNavigator = () => {
               options={{ headerShown: false }}
             />
             <Stack.Screen 
+              name="Onboarding" 
+              component={OnboardingScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
               name="ManagePet" 
               component={ManagePetScreen}
               options={{ headerShown: false }}

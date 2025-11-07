@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,10 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
-import { PetForm } from '../types';
+import { PetForm, RootStackParamList } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
@@ -28,7 +30,14 @@ const CARD_WIDTH = screenWidth * 0.85; // 85% of screen width
 const CARD_HEIGHT = screenHeight * 0.6; // 60% of screen height
 
 
+type OnboardingScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
+type OnboardingScreenRouteProp = RouteProp<RootStackParamList, 'Onboarding'>;
+
 const OnboardingScreen: React.FC = () => {
+  const navigation = useNavigation<OnboardingScreenNavigationProp>();
+  const route = useRoute<OnboardingScreenRouteProp>();
+  const isAddingNewCat = route.params?.addNewCat === true;
+  
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [petForms, setPetForms] = useState<PetForm[]>([{
     name: '',
@@ -41,10 +50,29 @@ const OnboardingScreen: React.FC = () => {
   const [ageMonths, setAgeMonths] = useState(12); // Default to 1 year (12 months)
   const [selectedYear, setSelectedYear] = useState(1);
   const [selectedMonth, setSelectedMonth] = useState(0);
-  // New task selection states - initialize with all tasks selected by default
-  const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>(['feed', 'peeing_frequency', 'poop_consistency', 'activity', 'grooming']);
-  const [selectedWeeklyTasks, setSelectedWeeklyTasks] = useState<string[]>(['sleep_breathing', 'tooth_brushing', 'nail_clipping']);
-  const [selectedMonthlyTasks, setSelectedMonthlyTasks] = useState<string[]>(['flea_treatment', 'internal_deworming', 'vet_visit']);
+  
+  // Get store actions and existing userTasks
+  const { addPet, setOnboardingComplete, setUserTasks, setTaskReminderState, userTasks: existingUserTasks } = useAppStore();
+  
+  // New task selection states - initialize with existing tasks if adding new cat, otherwise all tasks selected by default
+  const [selectedDailyTasks, setSelectedDailyTasks] = useState<string[]>(() => {
+    if (isAddingNewCat && existingUserTasks) {
+      return existingUserTasks.daily.map(task => task.id);
+    }
+    return ['feed', 'peeing_frequency', 'poop_consistency', 'activity', 'grooming'];
+  });
+  const [selectedWeeklyTasks, setSelectedWeeklyTasks] = useState<string[]>(() => {
+    if (isAddingNewCat && existingUserTasks) {
+      return existingUserTasks.weekly.map(task => task.id);
+    }
+    return ['sleep_breathing', 'tooth_brushing', 'nail_clipping'];
+  });
+  const [selectedMonthlyTasks, setSelectedMonthlyTasks] = useState<string[]>(() => {
+    if (isAddingNewCat && existingUserTasks) {
+      return existingUserTasks.monthly.map(task => task.id);
+    }
+    return ['flea_treatment', 'internal_deworming', 'vet_visit'];
+  });
 
   // Custom tasks state
   const [customTasks, setCustomTasks] = useState<{ [key: string]: any[] }>({
@@ -78,8 +106,6 @@ const OnboardingScreen: React.FC = () => {
   const [tempGender, setTempGender] = useState<'male' | 'female' | 'other'>('other');
   const [tempBreed, setTempBreed] = useState('');
   const [tempPersonality, setTempPersonality] = useState('');
-
-  const { addPet, setOnboardingComplete, setUserTasks, setTaskReminderState } = useAppStore();
 
   // Wheel picker data arrays
   const hourOptions = Array.from({ length: 12 }, (_, i) => ({
@@ -120,43 +146,75 @@ const OnboardingScreen: React.FC = () => {
     ]
   };
 
-  // Generate dynamic steps based on number of cats
-  const generateDynamicSteps = () => {
-    const baseSteps = [...ONBOARDING_STEPS];
-    const dynamicSteps: any[] = [];
+  // Check if any cat was actually created (has a name)
+  const hasAnyCat = useMemo(() => {
+    return petForms.some(form => form.name && form.name.trim().length > 0);
+  }, [petForms]);
 
-    // For each cat after the first one, insert cat_name and cat_info steps
-    for (let i = 1; i < petForms.length; i++) {
-      dynamicSteps.push(
-        {
-          id: `cat_name_${i}`,
-          title: `What's your ${i === 1 ? 'second' : `${i + 1}th`} cat's name?`,
-          description: `Add a name and photo for your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
-          component: 'CatName',
-          catIndex: i,
-        },
-        {
-          id: `cat_info_${i}`,
-          title: `Basic Information`,
-          description: `Tell us about your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
-          component: 'CatInfo',
-          catIndex: i,
-        }
+  // Generate dynamic steps based on number of cats
+  const allSteps = useMemo(() => {
+    let baseSteps = [...ONBOARDING_STEPS];
+    
+    // If adding a new cat, filter out welcome and add_another steps
+    if (isAddingNewCat) {
+      baseSteps = baseSteps.filter(step => 
+        step.id !== 'welcome' && step.id !== 'add_another' && step.id !== 'reminder_time'
       );
+      
+      // If no cat was created, also filter out task selection steps
+      if (!hasAnyCat) {
+        baseSteps = baseSteps.filter(step => 
+          step.id !== 'logging_goals' && 
+          step.id !== 'daily_tasks' && 
+          step.id !== 'weekly_tasks' && 
+          step.id !== 'monthly_tasks'
+        );
+      }
+    } else {
+      const dynamicSteps: any[] = [];
+
+      // For each cat after the first one, insert cat_name and cat_info steps
+      for (let i = 1; i < petForms.length; i++) {
+        dynamicSteps.push(
+          {
+            id: `cat_name_${i}`,
+            title: `What's your ${i === 1 ? 'second' : `${i + 1}th`} cat's name?`,
+            description: `Add a name and photo for your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
+            component: 'CatName',
+            catIndex: i,
+          },
+          {
+            id: `cat_info_${i}`,
+            title: `Basic Information`,
+            description: `Tell us about your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
+            component: 'CatInfo',
+            catIndex: i,
+          }
+        );
+      }
+
+      // Insert dynamic steps after the first cat_info and before add_another
+      const addAnotherIndex = baseSteps.findIndex(step => step.id === 'add_another');
+      baseSteps = [
+        ...baseSteps.slice(0, addAnotherIndex),
+        ...dynamicSteps,
+        ...baseSteps.slice(addAnotherIndex)
+      ];
+      
+      // If no cat was created, filter out task selection steps
+      if (!hasAnyCat) {
+        baseSteps = baseSteps.filter(step => 
+          step.id !== 'logging_goals' && 
+          step.id !== 'daily_tasks' && 
+          step.id !== 'weekly_tasks' && 
+          step.id !== 'monthly_tasks' &&
+          step.id !== 'reminder_time'
+        );
+      }
     }
 
-    // Insert dynamic steps after the first cat_info and before add_another
-    const addAnotherIndex = baseSteps.findIndex(step => step.id === 'add_another');
-    const result = [
-      ...baseSteps.slice(0, addAnotherIndex),
-      ...dynamicSteps,
-      ...baseSteps.slice(addAnotherIndex)
-    ];
-
-    return result;
-  };
-
-  const allSteps = generateDynamicSteps();
+    return baseSteps;
+  }, [isAddingNewCat, petForms, hasAnyCat]);
 
   // Picker functions
   const openAgePicker = () => {
@@ -241,58 +299,115 @@ const OnboardingScreen: React.FC = () => {
   };
 
   const handleComplete = async () => {
-    // Complete onboarding - save all cats
-    petForms.forEach((petForm, index) => {
+    if (isAddingNewCat) {
+      // Adding a new cat after onboarding - save only the new cat
+      const petForm = petForms[0];
       if (petForm.name) {
         const newPet: any = {
-          id: Date.now().toString() + index,
+          id: Date.now().toString(),
           userId: '1',
           ...petForm,
-          avatar: catPhotos[index] || undefined,
+          avatar: catPhotos[0] || undefined,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
         addPet(newPet);
       }
-    });
 
-    // Save user's selected tasks
-    const userTasks = {
-      daily: getCombinedTasks('daily').filter(task => selectedDailyTasks.includes(task.id)),
-      weekly: getCombinedTasks('weekly').filter(task => selectedWeeklyTasks.includes(task.id)),
-      monthly: getCombinedTasks('monthly').filter(task => selectedMonthlyTasks.includes(task.id)),
-      customTasks: customTasks,
-      reminderTime: {
-        ...reminderTime,
-        period: reminderTime.period as 'AM' | 'PM',
-      },
-    };
-    setUserTasks(userTasks);
+      // Only save tasks if a cat was created
+      if (hasAnyCat) {
+        // Merge new task selections with existing tasks
+        const newTasks = {
+          daily: getCombinedTasks('daily').filter(task => selectedDailyTasks.includes(task.id)),
+          weekly: getCombinedTasks('weekly').filter(task => selectedWeeklyTasks.includes(task.id)),
+          monthly: getCombinedTasks('monthly').filter(task => selectedMonthlyTasks.includes(task.id)),
+          customTasks: customTasks,
+        };
 
-    // Initialize task reminder state
-    const reminderState = TaskReminderService.initializeReminderState(userTasks);
-    setTaskReminderState(reminderState);
+        // Merge with existing tasks (keep existing reminderTime)
+        const mergedTasks = {
+          daily: [...(existingUserTasks?.daily || []), ...newTasks.daily].filter((task, index, self) =>
+            index === self.findIndex(t => t.id === task.id)
+          ),
+          weekly: [...(existingUserTasks?.weekly || []), ...newTasks.weekly].filter((task, index, self) =>
+            index === self.findIndex(t => t.id === task.id)
+          ),
+          monthly: [...(existingUserTasks?.monthly || []), ...newTasks.monthly].filter((task, index, self) =>
+            index === self.findIndex(t => t.id === task.id)
+          ),
+          customTasks: { ...existingUserTasks?.customTasks, ...customTasks },
+          reminderTime: existingUserTasks?.reminderTime || {
+            hour: 9,
+            minute: 0,
+            period: 'AM' as 'AM' | 'PM',
+          },
+        };
+        setUserTasks(mergedTasks);
 
-    // Request notification permissions and schedule reminders
-    try {
-      const hasPermission = await NotificationService.requestPermissions();
-      if (hasPermission) {
-        // Use the first pet's name if available
-        const petName = petForms[0]?.name || 'your cat';
-        await NotificationService.scheduleTaskReminders(
-          userTasks,
-          reminderState,
-          petName
-        );
+        // Update task reminder state
+        const reminderState = TaskReminderService.initializeReminderState(mergedTasks);
+        setTaskReminderState(reminderState);
       }
-    } catch (error) {
-      console.error('Error setting up notifications:', error);
-      // Continue even if notifications fail
-    }
 
-    // Mark onboarding as complete by setting index beyond the array
-    setCurrentCardIndex(allSteps.length);
-    setOnboardingComplete(true);
+      // Navigate back to pet profiles
+      navigation.goBack();
+    } else {
+      // Complete onboarding - save all cats
+      petForms.forEach((petForm, index) => {
+        if (petForm.name) {
+          const newPet: any = {
+            id: Date.now().toString() + index,
+            userId: '1',
+            ...petForm,
+            avatar: catPhotos[index] || undefined,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          addPet(newPet);
+        }
+      });
+
+      // Only save tasks if at least one cat was created
+      if (hasAnyCat) {
+        // Save user's selected tasks
+        const userTasks = {
+          daily: getCombinedTasks('daily').filter(task => selectedDailyTasks.includes(task.id)),
+          weekly: getCombinedTasks('weekly').filter(task => selectedWeeklyTasks.includes(task.id)),
+          monthly: getCombinedTasks('monthly').filter(task => selectedMonthlyTasks.includes(task.id)),
+          customTasks: customTasks,
+          reminderTime: {
+            ...reminderTime,
+            period: reminderTime.period as 'AM' | 'PM',
+          },
+        };
+        setUserTasks(userTasks);
+
+        // Initialize task reminder state
+        const reminderState = TaskReminderService.initializeReminderState(userTasks);
+        setTaskReminderState(reminderState);
+
+        // Request notification permissions and schedule reminders
+        try {
+          const hasPermission = await NotificationService.requestPermissions();
+          if (hasPermission) {
+            // Use the first pet's name if available
+            const petName = petForms[0]?.name || 'your cat';
+            await NotificationService.scheduleTaskReminders(
+              userTasks,
+              reminderState,
+              petName
+            );
+          }
+        } catch (error) {
+          console.error('Error setting up notifications:', error);
+          // Continue even if notifications fail
+        }
+      }
+
+      // Mark onboarding as complete by setting index beyond the array
+      setCurrentCardIndex(allSteps.length);
+      setOnboardingComplete(true);
+    }
   };
 
   // Interactive input handlers for new task structure

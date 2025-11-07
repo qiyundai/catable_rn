@@ -319,23 +319,30 @@ const TasksScreen: React.FC = () => {
                 const value = min + i;
                 const label = labels[value.toString()] || value.toString();
                 const isSelected = fieldValue === value;
+                const description = getScaleDescription(task.id, field.id, value);
                 
                 return (
-                  <TouchableOpacity
-                    key={value}
-                    style={[
-                      styles.scaleOption,
-                      isSelected && styles.scaleOptionSelected
-                    ]}
-                    onPress={() => updateTaskFieldValue(task.id, field.id, value)}
-                  >
-                    <Text style={[
-                      styles.scaleOptionText,
-                      isSelected && styles.scaleOptionTextSelected
-                    ]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
+                  <View key={value} style={styles.scaleOptionWrapper}>
+                    <TouchableOpacity
+                      style={[
+                        styles.scaleOption,
+                        isSelected && styles.scaleOptionSelected
+                      ]}
+                      onPress={() => updateTaskFieldValue(task.id, field.id, value)}
+                    >
+                      <Text style={[
+                        styles.scaleOptionText,
+                        isSelected && styles.scaleOptionTextSelected
+                      ]}>
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                    {description && (
+                      <Text style={styles.scaleOptionDescription}>
+                        {description}
+                      </Text>
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -478,6 +485,35 @@ const TasksScreen: React.FC = () => {
       'sleeping-resp-rate': 'A healthy cat breathes 20 - 30 times per minute during sleep. Tracking this helps spot early signs of heart problems.',
     };
     return funFacts[taskId] || null;
+  };
+
+  // Get scale description for specific task/field combinations
+  const getScaleDescription = (taskId: string, fieldId: string, value: number): string | null => {
+    // Activity/activeness scale (1-5)
+    if (taskId === 'playtime' && fieldId === 'activeness') {
+      const descriptions: { [key: number]: string } = {
+        1: 'Very lazy',
+        2: 'Lazy',
+        3: 'Normal',
+        4: 'Active',
+        5: 'Super energetic',
+      };
+      return descriptions[value] || '';
+    }
+    
+    // Poop consistency scale (1-5)
+    if (taskId === 'poop' && fieldId === 'consistency') {
+      const descriptions: { [key: number]: string } = {
+        1: 'Very hard',
+        2: 'Dry',
+        3: 'Normal',
+        4: 'Wet',
+        5: 'Watery diarrhoea',
+      };
+      return descriptions[value] || '';
+    }
+    
+    return null;
   };
 
   // Convert number + period to frequency
@@ -914,7 +950,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: SPACING.xl,
-    paddingBottom: SPACING.xl + 80, // Extra padding for buttons (60px button height + 20px spacing)
+    paddingBottom: SPACING.lg + 30, // Extra padding for buttons (60px button height + 20px spacing)
     alignItems: 'center',
   },
   cardIcon: {
@@ -937,8 +973,8 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   funFactContainer: {
-    marginTop: SPACING.lg,
-    paddingTop: SPACING.md,
+    marginTop: SPACING.md,
+    paddingTop: SPACING.sm,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     width: '100%',
@@ -1097,7 +1133,7 @@ const styles = StyleSheet.create({
     maxHeight: 300,
   },
   inputsScrollContent: {
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   fieldContainer: {
     marginBottom: SPACING.lg,
@@ -1176,30 +1212,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: SPACING.sm,
+    gap: SPACING.md,
     width: '100%',
   },
+  scaleOptionWrapper: {
+    alignItems: 'center',
+    width: 40,
+  },
   scaleOption: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minWidth: 80,
+    backgroundColor: COLORS.gray,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
   },
   scaleOptionSelected: {
     backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
   },
   scaleOptionText: {
-    ...TYPOGRAPHY.caption,
+    ...TYPOGRAPHY.body,
     color: COLORS.text,
     textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 14,
   },
   scaleOptionTextSelected: {
     color: COLORS.surface,
-    fontWeight: '600',
+  },
+  scaleOptionDescription: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontSize: 8,
+    marginTop: SPACING.xs,
+    lineHeight: 10,
+    width: 40,
   },
   // Choices input
   choicesInputContainer: {
@@ -1411,9 +1460,13 @@ const styles = StyleSheet.create({
     height: 200,
     marginVertical: SPACING.xl,
     gap: SPACING.md,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   pickerColumn: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalButtons: {
     flexDirection: 'row',
