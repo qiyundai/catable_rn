@@ -1,0 +1,441 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppStore } from '../store';
+import { LoginForm, RegisterForm } from '../types';
+import { COLORS, TYPOGRAPHY, SPACING, SOCIAL_LOGIN_PROVIDERS } from '../constants';
+import { Logo } from '../components/Logo';
+
+const AuthScreen: React.FC = () => {
+  const [showInitialView, setShowInitialView] = useState(true);
+  const [isLogin, setIsLogin] = useState(true);
+  const [loginForm, setLoginForm] = useState<LoginForm>({
+    email: '',
+    password: '',
+  });
+  const [registerForm, setRegisterForm] = useState<RegisterForm>({
+    userName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const { setUser, setAuthenticated } = useAppStore();
+
+  const handleInitialLogin = () => {
+    setIsLogin(true);
+    setShowInitialView(false);
+  };
+
+  const handleInitialRegister = () => {
+    setIsLogin(false);
+    setShowInitialView(false);
+  };
+
+  const handleBackToInitial = () => {
+    setShowInitialView(true);
+  };
+
+  const handleLogin = async () => {
+    if (!loginForm.email || !loginForm.password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    // Mock authentication - in real app, this would call an API
+    const mockUser = {
+      id: '1',
+      email: loginForm.email,
+      userName: 'Cat Owner',
+      region: '',
+      language: 'en' as const,
+      isGuest: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    setUser(mockUser);
+    setAuthenticated(true);
+  };
+
+  const handleRegister = async () => {
+    if (!registerForm.userName || !registerForm.email || !registerForm.password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (registerForm.password !== registerForm.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    // Mock registration
+    const mockUser = {
+      id: '1',
+      email: registerForm.email,
+      userName: registerForm.userName,
+      region: '',
+      language: 'en' as const,
+      isGuest: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    setUser(mockUser);
+    setAuthenticated(true);
+  };
+
+  const handleSocialLogin = (provider: string) => {
+    // Mock social login
+    const mockUser = {
+      id: '1',
+      email: `user@${provider}.com`,
+      userName: `${provider} User`,
+      region: '',
+      language: 'en' as const,
+      isGuest: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    setUser(mockUser);
+    setAuthenticated(true);
+  };
+
+  const handleGuestMode = () => {
+    const guestUser = {
+      id: 'guest',
+      email: '',
+      userName: 'Guest User',
+      region: '',
+      language: 'en' as const,
+      isGuest: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    setUser(guestUser);
+    setAuthenticated(true);
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {showInitialView ? (
+            <View style={styles.initialView}>
+              <View style={styles.header}>
+                <Logo />
+              </View>
+              
+              <View style={styles.initialButtonsContainer}>
+                <TouchableOpacity style={styles.loginButton} onPress={handleInitialLogin}>
+                  <Text style={styles.loginButtonText}>Login</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.registerButton} onPress={handleInitialRegister}>
+                  <Text style={styles.registerButtonText}>Register</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={styles.guestLink} onPress={handleGuestMode}>
+                  <Text style={styles.guestLinkText}>Continue as a guest</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <>
+              <View style={styles.header}>
+                <Text style={styles.subtitle}>
+                  {isLogin ? 'Welcome back!' : 'Create your account'}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.backButtonTop}
+                onPress={handleBackToInitial}
+              >
+                <Text style={styles.backButtonIcon}>‹</Text>
+              </TouchableOpacity>
+
+              <View style={styles.formContainer}>
+                {isLogin ? (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      value={loginForm.email}
+                      onChangeText={(text) => setLoginForm({ ...loginForm, email: text })}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      value={loginForm.password}
+                      onChangeText={(text) => setLoginForm({ ...loginForm, password: text })}
+                      secureTextEntry
+                    />
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
+                      <Text style={styles.primaryButtonText}>Login</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Username"
+                      value={registerForm.userName}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, userName: text })}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      value={registerForm.email}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, email: text })}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Password"
+                      value={registerForm.password}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, password: text })}
+                      secureTextEntry
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Confirm Password"
+                      value={registerForm.confirmPassword}
+                      onChangeText={(text) => setRegisterForm({ ...registerForm, confirmPassword: text })}
+                      secureTextEntry
+                    />
+                    <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
+                      <Text style={styles.primaryButtonText}>Register</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>{isLogin ? 'Or login with' : 'Or sign up with'}</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+          <View style={styles.socialButtonsContainer}>
+            {SOCIAL_LOGIN_PROVIDERS.map((provider) => (
+              <TouchableOpacity
+                key={provider.id}
+                style={[styles.socialButton, { borderColor: provider.color }]}
+                onPress={() => handleSocialLogin(provider.id)}
+              >
+                <Text style={[styles.socialButtonIcon, { color: provider.color }]}>{provider.icon}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+                <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
+                  <Text style={styles.guestButtonText}>Continue as Guest</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.switchButton}
+                  onPress={() => setIsLogin(!isLogin)}
+                >
+                  <Text style={styles.switchButtonText}>
+                    {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: SPACING.lg,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: SPACING.xxl,
+  },
+  subtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.md,
+  },
+  formContainer: {
+    width: '100%',
+  },
+  input: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    fontSize: 16,
+  },
+  primaryButton: {
+    backgroundColor: COLORS.darkInk,
+    borderRadius: 8,
+    padding: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+  },
+  primaryButtonText: {
+    color: COLORS.surface,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: SPACING.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    marginHorizontal: SPACING.md,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  socialButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    gap: SPACING.md,
+  },
+  socialButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+  },
+  socialButtonIcon: {
+    fontSize: 24,
+  },
+  guestButton: {
+    alignItems: 'center',
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  guestButtonText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
+  switchButton: {
+    alignItems: 'center',
+    padding: SPACING.md,
+  },
+  switchButtonText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  initialView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialButtonsContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: SPACING.xxl,
+  },
+  loginButton: {
+    backgroundColor: COLORS.darkInk,
+    borderRadius: 8,
+    padding: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    width: '100%',
+    maxWidth: 300,
+  },
+  loginButtonText: {
+    color: COLORS.surface,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerButton: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 2,
+    borderColor: COLORS.darkInk,
+    borderRadius: 8,
+    padding: SPACING.md,
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    width: '100%',
+    maxWidth: 300,
+  },
+  registerButtonText: {
+    color: COLORS.darkInk,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guestLink: {
+    padding: SPACING.sm,
+  },
+  guestLinkText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  backButtonTop: {
+    position: 'absolute',
+    top: SPACING.lg,
+    left: SPACING.lg,
+    width: 44,
+    height: 44,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  backButtonIcon: {
+    fontSize: 24,
+    color: COLORS.darkInk,
+    fontWeight: 'bold',
+  },
+});
+
+export default AuthScreen;
