@@ -18,6 +18,7 @@ import { useAppStore } from '../store';
 import { PetForm, RootStackParamList } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import WheelPicker from '../components/WheelPicker';
+import { calculateCurrentAgeInMonths } from '../utils/petUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -33,12 +34,15 @@ const ManagePetScreen: React.FC = () => {
   const isEditing = !!petId;
   const existingPet = petId ? pets.find(pet => pet.id === petId) : null;
   
+  // Calculate current age for existing pets
+  const currentAgeMonths = existingPet ? calculateCurrentAgeInMonths(existingPet) : 12;
+  
   const [petForm, setPetForm] = useState<PetForm>(() => {
     if (existingPet) {
       return {
         name: existingPet.name || '',
         breed: existingPet.breed || '',
-        ageMonths: existingPet.ageMonths || 12,
+        ageMonths: currentAgeMonths,
         gender: existingPet.gender || 'other',
         personality: existingPet.personality || '',
       };
@@ -53,11 +57,11 @@ const ManagePetScreen: React.FC = () => {
   });
   
   const [catPhoto, setCatPhoto] = useState<string | null>(existingPet?.avatar || null);
-  const [ageMonths, setAgeMonths] = useState(existingPet?.ageMonths || 12);
+  const [ageMonths, setAgeMonths] = useState(currentAgeMonths);
   
-  // Calculate years and months from ageMonths
-  const initialYears = Math.floor((existingPet?.ageMonths || 12) / 12);
-  const initialMonths = (existingPet?.ageMonths || 12) % 12;
+  // Calculate years and months from current age
+  const initialYears = Math.floor(currentAgeMonths / 12);
+  const initialMonths = currentAgeMonths % 12;
   
   const [selectedYear, setSelectedYear] = useState(initialYears);
   const [selectedMonth, setSelectedMonth] = useState(initialMonths);
@@ -71,10 +75,12 @@ const ManagePetScreen: React.FC = () => {
   // Initialize age values when component mounts or when existingPet changes
   React.useEffect(() => {
     if (existingPet) {
-      const years = Math.floor(existingPet.ageMonths / 12);
-      const months = existingPet.ageMonths % 12;
+      const currentAge = calculateCurrentAgeInMonths(existingPet);
+      const years = Math.floor(currentAge / 12);
+      const months = currentAge % 12;
       setSelectedYear(years);
       setSelectedMonth(months);
+      setAgeMonths(currentAge);
     }
   }, [existingPet]);
 
@@ -255,12 +261,16 @@ const ManagePetScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
+              {/* Shared floating selection bar - rendered first so it's behind */}
+              <View style={styles.sharedSelectionBar} pointerEvents="none" />
+              
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Years</Text>
                 <WheelPicker
                   items={Array.from({ length: 20 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedYear}
                   onSelectionChange={setTempSelectedYear}
+                  showSelectionIndicator={false}
                 />
               </View>
 
@@ -270,6 +280,7 @@ const ManagePetScreen: React.FC = () => {
                   items={Array.from({ length: 12 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedMonth}
                   onSelectionChange={setTempSelectedMonth}
+                  showSelectionIndicator={false}
                 />
               </View>
             </View>
@@ -560,11 +571,31 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
+    position: 'relative',
   },
   wheelColumn: {
     flex: 1,
     alignItems: 'center',
     marginHorizontal: SPACING.sm,
+  },
+  sharedSelectionBar: {
+    position: 'absolute',
+    left: SPACING.lg,
+    right: SPACING.lg,
+    height: 40,
+    top: '50%',
+    marginTop: 8, // Adjust for label height (20px caption + 8px margin)
+    backgroundColor: COLORS.gray,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: -1, // Behind the text
   },
   wheelLabel: {
     ...TYPOGRAPHY.caption,

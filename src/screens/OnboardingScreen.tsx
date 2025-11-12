@@ -915,12 +915,16 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
             <View style={styles.timePickerWheel}>
+              {/* Shared floating selection bar - rendered first so it's behind */}
+              <View style={styles.sharedSelectionBar} pointerEvents="none" />
+              
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Hour</Text>
                 <WheelPicker
                   items={hourOptions}
                   selectedIndex={selectedHourIndex}
                   onSelectionChange={handleHourChange}
+                  showSelectionIndicator={false}
                 />
               </View>
               <View style={styles.wheelColumn}>
@@ -929,6 +933,7 @@ const OnboardingScreen: React.FC = () => {
                   items={minuteOptions}
                   selectedIndex={selectedMinuteIndex}
                   onSelectionChange={handleMinuteChange}
+                  showSelectionIndicator={false}
                 />
               </View>
               <View style={styles.wheelColumn}>
@@ -937,6 +942,7 @@ const OnboardingScreen: React.FC = () => {
                   items={periodOptions}
                   selectedIndex={selectedPeriodIndex}
                   onSelectionChange={handlePeriodChange}
+                  showSelectionIndicator={false}
                 />
               </View>
             </View>
@@ -1052,12 +1058,16 @@ const OnboardingScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
+              {/* Shared floating selection bar - rendered first so it's behind */}
+              <View style={styles.sharedSelectionBar} pointerEvents="none" />
+              
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Years</Text>
                 <WheelPicker
                   items={Array.from({ length: 20 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedYear}
                   onSelectionChange={setTempSelectedYear}
+                  showSelectionIndicator={false}
                 />
               </View>
 
@@ -1067,6 +1077,7 @@ const OnboardingScreen: React.FC = () => {
                   items={Array.from({ length: 12 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedMonth}
                   onSelectionChange={setTempSelectedMonth}
+                  showSelectionIndicator={false}
                 />
               </View>
             </View>
@@ -1511,6 +1522,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
+    position: 'relative',
+    overflow: 'visible',
   },
   // Custom Picker Styles
   modalOverlay: {
@@ -1527,6 +1540,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     maxHeight: '80%',
+    overflow: 'visible',
   },
   pickerHeader: {
     flexDirection: 'row',
@@ -1581,6 +1595,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
+    position: 'relative',
+    overflow: 'visible',
   },
   wheelColumn: {
     flex: 1,
@@ -1592,6 +1608,25 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
     fontWeight: '600',
+  },
+  sharedSelectionBar: {
+    position: 'absolute',
+    left: SPACING.lg,
+    right: SPACING.lg,
+    height: 40,
+    top: '50%',
+    marginTop: 8, // Adjust for label height (20px caption + 8px margin)
+    backgroundColor: COLORS.gray,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: 0, // Changed to positive to test if it shows up
   },
   // Add Another Cat Button Styles
   buttonContainer: {

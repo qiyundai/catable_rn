@@ -6,6 +6,7 @@ export interface TaskCompletionRecord {
   lastCompleted?: Date;
   lastShown?: Date;
   cycleStartDate: Date; // When the cycle started (for weekly/monthly)
+  completionHistory: Date[]; // Array of all completion dates for historical tracking
 }
 
 export interface TaskReminderState {
@@ -93,6 +94,7 @@ class TaskReminderService {
     const record = reminderState[taskId] || {
       taskId,
       cycleStartDate: today,
+      completionHistory: [],
     };
 
     return {
@@ -115,7 +117,11 @@ class TaskReminderService {
     const record = reminderState[taskId] || {
       taskId,
       cycleStartDate: today,
+      completionHistory: [],
     };
+
+    // Add to completion history
+    const updatedHistory = [...(record.completionHistory || []), today];
 
     return {
       ...reminderState,
@@ -123,6 +129,7 @@ class TaskReminderService {
         ...record,
         lastCompleted: today,
         lastShown: today,
+        completionHistory: updatedHistory,
       },
     };
   }
@@ -139,6 +146,7 @@ class TaskReminderService {
       state[task.id] = {
         taskId: task.id,
         cycleStartDate: today,
+        completionHistory: [],
       };
     });
 
@@ -147,6 +155,7 @@ class TaskReminderService {
       state[task.id] = {
         taskId: task.id,
         cycleStartDate: today,
+        completionHistory: [],
       };
     });
 
@@ -155,6 +164,7 @@ class TaskReminderService {
       state[task.id] = {
         taskId: task.id,
         cycleStartDate: today,
+        completionHistory: [],
       };
     });
 
@@ -164,6 +174,7 @@ class TaskReminderService {
         state[task.id] = {
           taskId: task.id,
           cycleStartDate: today,
+          completionHistory: [],
         };
       });
     });
@@ -221,6 +232,73 @@ class TaskReminderService {
     }
 
     return nextDate;
+  }
+
+  /**
+   * Get completions within a date range
+   */
+  getCompletionsInRange(
+    taskId: string,
+    reminderState: TaskReminderState,
+    startDate: Date,
+    endDate: Date
+  ): Date[] {
+    const record = reminderState[taskId];
+    if (!record || !record.completionHistory) {
+      return [];
+    }
+
+    return record.completionHistory.filter((date) => {
+      const completionDate = new Date(date);
+      return completionDate >= startDate && completionDate <= endDate;
+    });
+  }
+
+  /**
+   * Get completion count for current month
+   */
+  getMonthlyCompletionCount(
+    taskId: string,
+    reminderState: TaskReminderState,
+    referenceDate: Date = new Date()
+  ): number {
+    const startOfMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
+    const endOfMonth = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0, 23, 59, 59);
+    
+    const completions = this.getCompletionsInRange(taskId, reminderState, startOfMonth, endOfMonth);
+    return completions.length;
+  }
+
+  /**
+   * Calculate completion rate for a date range (percentage of days completed)
+   */
+  getCompletionRate(
+    taskId: string,
+    reminderState: TaskReminderState,
+    startDate: Date,
+    endDate: Date
+  ): number {
+    const completions = this.getCompletionsInRange(taskId, reminderState, startDate, endDate);
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    if (totalDays === 0) return 0;
+    return (completions.length / totalDays) * 100;
+  }
+
+  /**
+   * Get average completions per week in a date range
+   */
+  getAverageCompletionsPerWeek(
+    taskId: string,
+    reminderState: TaskReminderState,
+    startDate: Date,
+    endDate: Date
+  ): number {
+    const completions = this.getCompletionsInRange(taskId, reminderState, startDate, endDate);
+    const totalWeeks = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    
+    if (totalWeeks === 0) return 0;
+    return completions.length / totalWeeks;
   }
 }
 

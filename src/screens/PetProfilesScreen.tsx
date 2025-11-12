@@ -7,6 +7,7 @@ import {
   FlatList,
   Image,
   LayoutAnimation,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -15,41 +16,18 @@ import { useAppStore } from '../store';
 import { Pet } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, BORDER_RADIUS } from '../constants';
 import { TASK_DEFINITIONS, getTaskById, getTaskByOldId, TaskDefinition } from '../constants/tasks';
+import TaskReminderService from '../services/TaskReminderService';
+import PdfReportService from '../services/PdfReportService';
+import { formatPetAge } from '../utils/petUtils';
 
 type PetProfilesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const PetProfilesScreen: React.FC = () => {
   const { pets, currentPet, setCurrentPet, userTasks, taskReminderState } = useAppStore();
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const navigation = useNavigation<PetProfilesScreenNavigationProp>();
 
-  const formatAge = (pet: Pet) => {
-    // Handle both old format (age) and new format (ageMonths)
-    let months: number;
-    if (pet.ageMonths !== undefined) {
-      months = pet.ageMonths;
-    } else {
-      return 'Unknown age';
-    }
-
-    if (isNaN(months) || months < 0) {
-      return 'Unknown age';
-    }
-
-    if (months < 12) {
-      return `${months} month${months !== 1 ? 's' : ''}`;
-    } else if (months === 12) {
-      return '1 year';
-    } else {
-      const years = Math.floor(months / 12);
-      const remainingMonths = months % 12;
-      if (remainingMonths === 0) {
-        return `${years} year${years !== 1 ? 's' : ''}`;
-      } else {
-        return `${years} year${years !== 1 ? 's' : ''} ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
-      }
-    }
-  };
 
   // Generate real monthly data for the pet based on task completion history
   const generateMonthlyData = (petId: string) => {
@@ -59,26 +37,12 @@ const PetProfilesScreen: React.FC = () => {
 
     const data: { [key: string]: string } = {};
     const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const daysInMonth = now.getDate();
 
     // Helper to get task definition
     const getTaskDef = (taskId: string): TaskDefinition | null => {
       return getTaskByOldId(taskId) || getTaskById(taskId);
-    };
-
-    // Helper to format time ago
-    const formatTimeAgo = (date: Date): string => {
-      const diffMs = now.getTime() - date.getTime();
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-      const diffWeeks = Math.floor(diffDays / 7);
-      const diffMonths = Math.floor(diffDays / 30);
-
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return '1 day ago';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffWeeks === 1) return '1 week ago';
-      if (diffWeeks < 4) return `${diffWeeks} weeks ago`;
-      if (diffMonths === 1) return '1 month ago';
-      return `${diffMonths} months ago`;
     };
 
     // Process daily tasks
@@ -86,14 +50,14 @@ const PetProfilesScreen: React.FC = () => {
       const taskDef = getTaskDef(userTask.id);
       if (!taskDef) return;
 
-      const record = taskReminderState[userTask.id];
       const displayName = taskDef.title;
+      const monthlyCount = TaskReminderService.getMonthlyCompletionCount(userTask.id, taskReminderState, now);
+      const completionRate = TaskReminderService.getCompletionRate(userTask.id, taskReminderState, startOfMonth, now);
 
-      if (record && record.lastCompleted) {
-        const lastCompleted = new Date(record.lastCompleted);
-        data[displayName] = `Last ${formatTimeAgo(lastCompleted)}`;
+      if (monthlyCount > 0) {
+        data[displayName] = `${monthlyCount}/${daysInMonth} days (${completionRate.toFixed(0)}%)`;
       } else {
-        data[displayName] = 'N/A';
+        data[displayName] = `0/${daysInMonth} days (0%) - No completions this month`;
       }
     });
 
@@ -102,23 +66,16 @@ const PetProfilesScreen: React.FC = () => {
       const taskDef = getTaskDef(userTask.id);
       if (!taskDef) return;
 
-      const record = taskReminderState[userTask.id];
       const displayName = taskDef.title;
+      const monthlyCount = TaskReminderService.getMonthlyCompletionCount(userTask.id, taskReminderState, now);
+      const avgPerWeek = TaskReminderService.getAverageCompletionsPerWeek(userTask.id, taskReminderState, startOfMonth, now);
+      const weeksInMonth = Math.ceil(daysInMonth / 7);
+      const expectedCompletions = weeksInMonth;
 
-      if (record && record.lastCompleted) {
-        const lastCompleted = new Date(record.lastCompleted);
-        // Count how many times in the last month (4 weeks)
-        const weeksSince = Math.floor((now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60 * 24 * 7));
-        
-        if (weeksSince === 0) {
-          data[displayName] = 'This week';
-        } else if (weeksSince < 4) {
-          data[displayName] = `${formatTimeAgo(lastCompleted)}`;
-        } else {
-          data[displayName] = `Last ${formatTimeAgo(lastCompleted)}`;
-        }
+      if (monthlyCount > 0) {
+        data[displayName] = `${monthlyCount}/${expectedCompletions} weeks (${avgPerWeek.toFixed(1)}/week avg)`;
       } else {
-        data[displayName] = 'N/A';
+        data[displayName] = `0/${expectedCompletions} weeks - No completions this month`;
       }
     });
 
@@ -127,14 +84,16 @@ const PetProfilesScreen: React.FC = () => {
       const taskDef = getTaskDef(userTask.id);
       if (!taskDef) return;
 
-      const record = taskReminderState[userTask.id];
       const displayName = taskDef.title;
+      const monthlyCount = TaskReminderService.getMonthlyCompletionCount(userTask.id, taskReminderState, now);
+      const record = taskReminderState[userTask.id];
 
-      if (record && record.lastCompleted) {
+      if (monthlyCount > 0 && record?.lastCompleted) {
         const lastCompleted = new Date(record.lastCompleted);
-        data[displayName] = `Last ${formatTimeAgo(lastCompleted)}`;
+        const daysSince = Math.floor((now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60 * 24));
+        data[displayName] = `Completed this month (${daysSince} days ago)`;
       } else {
-        data[displayName] = 'N/A';
+        data[displayName] = `Not completed this month`;
       }
     });
 
@@ -146,9 +105,31 @@ const PetProfilesScreen: React.FC = () => {
     setExpandedCardId(expandedCardId === petId ? null : petId);
   };
 
-  const handleExportReport = () => {
-    // TODO: Implement export functionality
-    // Export functionality will be implemented in a future update
+  const handleExportReport = async (pet: Pet) => {
+    if (!userTasks) {
+      Alert.alert('Error', 'No task data available to export.');
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const filePath = await PdfReportService.generateHealthReport({
+        pet,
+        userTasks,
+        taskReminderState,
+        reportDate: new Date(),
+      });
+
+      setIsExporting(false);
+    } catch (error) {
+      setIsExporting(false);
+      console.error('Error exporting report:', error);
+      Alert.alert(
+        'Export Failed',
+        'There was an error generating the report. Please try again.'
+      );
+    }
   };
 
   const renderPetCard = ({ item }: { item: Pet }) => {
@@ -180,7 +161,7 @@ const PetProfilesScreen: React.FC = () => {
             ]}>
               {item.name} {item.gender === 'male' ? '♂' : item.gender === 'female' ? '♀' : '⚧'}
             </Text>
-             <Text style={styles.petAge}>🗓️ {formatAge(item)}</Text>
+             <Text style={styles.petAge}>🗓️ {formatPetAge(item)}</Text>
             <Text style={styles.petBreed}>🐈‍⬛ {item.breed}</Text>
           </View>
         </View>
@@ -237,10 +218,13 @@ const PetProfilesScreen: React.FC = () => {
               ))}
             </View>
             <TouchableOpacity 
-              style={styles.exportButton}
-              onPress={handleExportReport}
+              style={[styles.exportButton, isExporting && styles.exportButtonDisabled]}
+              onPress={() => handleExportReport(item)}
+              disabled={isExporting}
             >
-              <Text style={styles.exportButtonText}>Export Report</Text>
+              <Text style={styles.exportButtonText}>
+                {isExporting ? 'Generating...' : 'Share Report'}
+              </Text>
             </TouchableOpacity>
           </View>
         )}
@@ -379,6 +363,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     alignItems: 'center',
     ...SHADOWS.small,
+  },
+  exportButtonDisabled: {
+    backgroundColor: COLORS.gray,
+    opacity: 0.6,
   },
   exportButtonText: {
     ...TYPOGRAPHY.body,

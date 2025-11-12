@@ -797,6 +797,9 @@ const TasksScreen: React.FC = () => {
             {selectedTaskForFrequency && (
               <>
                 <View style={styles.pickerContainer}>
+                  {/* Shared floating selection bar - rendered first so it's behind */}
+                  <View style={styles.sharedSelectionBar} pointerEvents="none" />
+                  
                   <View style={styles.pickerColumn}>
                     <WheelPicker
                       key={`number-${selectedPeriod}-${frequencyModalVisible}`}
@@ -807,6 +810,7 @@ const TasksScreen: React.FC = () => {
                       selectedIndex={Math.min(selectedNumber - 1, (selectedPeriod === 'day' ? 30 : 12) - 1)}
                       onSelectionChange={(index) => setSelectedNumber(index + 1)}
                       width={100}
+                      showSelectionIndicator={false}
                     />
                   </View>
                   <View style={styles.pickerColumn}>
@@ -829,6 +833,7 @@ const TasksScreen: React.FC = () => {
                         }
                       }}
                       width={120}
+                      showSelectionIndicator={false}
                     />
                   </View>
                 </View>
@@ -1460,6 +1465,7 @@ const styles = StyleSheet.create({
     height: 200,
     marginVertical: SPACING.xl,
     gap: SPACING.md,
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1501,6 +1507,25 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.body,
     color: COLORS.surface,
     fontWeight: '600',
+  },
+  sharedSelectionBar: {
+    position: 'absolute',
+    left: SPACING.lg,
+    right: SPACING.lg,
+    height: 40,
+    top: '50%',
+    marginTop: -20, // No labels in this picker, so center it properly
+    backgroundColor: COLORS.gray,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: 0, // Same level, but behind due to render order
   },
 });
 

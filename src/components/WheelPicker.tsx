@@ -13,6 +13,7 @@ interface WheelPickerProps {
   onSelectionChange: (index: number) => void;
   width?: number;
   height?: number;
+  showSelectionIndicator?: boolean;
 }
 
 const WheelPicker: React.FC<WheelPickerProps> = ({ 
@@ -21,6 +22,7 @@ const WheelPicker: React.FC<WheelPickerProps> = ({
   onSelectionChange,
   width = 80,
   height = 200,
+  showSelectionIndicator = true,
 }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const itemHeight = 40;
@@ -141,9 +143,11 @@ const WheelPicker: React.FC<WheelPickerProps> = ({
         </ScrollView>
         
         {/* Selection indicator overlay */}
-        <View style={[styles.overlay, { width, height }]}>
-          <View style={styles.selectionLine} />
-        </View>
+        {showSelectionIndicator && (
+          <View style={[styles.overlay, { width, height }]}>
+            <View style={styles.selectionLine} />
+          </View>
+        )}
       </View>
     </View>
   );

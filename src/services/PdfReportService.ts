@@ -1,0 +1,142 @@
+import { Share } from 'react-native';
+import { Pet, UserTasks } from '../types';
+import { TaskReminderState } from './TaskReminderService';
+import TaskReminderService from './TaskReminderService';
+import { getTaskById, getTaskByOldId, TaskDefinition } from '../constants/tasks';
+import { formatPetAge } from '../utils/petUtils';
+
+interface ReportData {
+  pet: Pet;
+  userTasks: UserTasks;
+  taskReminderState: TaskReminderState;
+  reportDate: Date;
+}
+
+class PdfReportService {
+  /**
+   * Generate and share a health report for a pet
+   */
+  async generateHealthReport(data: ReportData): Promise<string> {
+    const { pet, userTasks, taskReminderState, reportDate } = data;
+    const reportText = this.generateReportText(pet, userTasks, taskReminderState, reportDate);
+
+    try {
+      await Share.share({
+        message: reportText,
+        title: `${pet.name}'s Health Report`,
+      });
+      return 'success';
+    } catch (error) {
+      console.error('Error sharing report:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate a text-based health report
+   */
+  private generateReportText(
+    pet: Pet,
+    userTasks: UserTasks,
+    taskReminderState: TaskReminderState,
+    reportDate: Date
+  ): string {
+    const now = reportDate;
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const daysInMonth = now.getDate();
+
+    // Helper to get task definition
+    const getTaskDef = (taskId: string): TaskDefinition | null => {
+      return getTaskByOldId(taskId) || getTaskById(taskId);
+    };
+
+    let report = `🐱 PET HEALTH REPORT\n`;
+    report += `${'='.repeat(50)}\n\n`;
+
+    // Pet Information
+    report += `📋 PET INFORMATION\n`;
+    report += `${'-'.repeat(50)}\n`;
+    report += `Name: ${pet.name} ${pet.gender === 'male' ? '♂' : pet.gender === 'female' ? '♀' : '⚧'}\n`;
+    report += `Breed: ${pet.breed}\n`;
+    report += `Age: ${formatPetAge(pet)}\n`;
+    report += `Personality: ${pet.personality || 'Not specified'}\n\n`;
+
+    // Report Period
+    report += `📅 REPORT PERIOD\n`;
+    report += `${'-'.repeat(50)}\n`;
+    report += `From: ${startOfMonth.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n`;
+    report += `To: ${now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n`;
+    report += `Days Tracked: ${daysInMonth}\n`;
+    report += `Generated: ${now.toLocaleString('en-US')}\n\n`;
+
+    // Daily Tasks
+    if (userTasks.daily.length > 0) {
+      report += `📅 DAILY TASKS\n`;
+      report += `${'-'.repeat(50)}\n`;
+      userTasks.daily.forEach((userTask) => {
+        const taskDef = getTaskDef(userTask.id);
+        if (!taskDef) return;
+
+        const monthlyCount = TaskReminderService.getMonthlyCompletionCount(userTask.id, taskReminderState, now);
+        const completionRate = TaskReminderService.getCompletionRate(userTask.id, taskReminderState, startOfMonth, now);
+
+        report += `${taskDef.icon || '📝'} ${taskDef.title}\n`;
+        report += `   Completed: ${monthlyCount}/${daysInMonth} days\n`;
+        report += `   Rate: ${completionRate.toFixed(0)}%\n`;
+        report += `\n`;
+      });
+    }
+
+    // Weekly Tasks
+    if (userTasks.weekly.length > 0) {
+      report += `📆 WEEKLY TASKS\n`;
+      report += `${'-'.repeat(50)}\n`;
+      userTasks.weekly.forEach((userTask) => {
+        const taskDef = getTaskDef(userTask.id);
+        if (!taskDef) return;
+
+        const monthlyCount = TaskReminderService.getMonthlyCompletionCount(userTask.id, taskReminderState, now);
+        const avgPerWeek = TaskReminderService.getAverageCompletionsPerWeek(userTask.id, taskReminderState, startOfMonth, now);
+        const weeksInMonth = Math.ceil(daysInMonth / 7);
+
+        report += `${taskDef.icon || '📝'} ${taskDef.title}\n`;
+        report += `   Completed: ${monthlyCount}/${weeksInMonth} weeks\n`;
+        report += `   Average: ${avgPerWeek.toFixed(1)}x per week\n`;
+        report += `\n`;
+      });
+    }
+
+    // Monthly Tasks
+    if (userTasks.monthly.length > 0) {
+      report += `📋 MONTHLY TASKS\n`;
+      report += `${'-'.repeat(50)}\n`;
+      userTasks.monthly.forEach((userTask) => {
+        const taskDef = getTaskDef(userTask.id);
+        if (!taskDef) return;
+
+        const monthlyCount = TaskReminderService.getMonthlyCompletionCount(userTask.id, taskReminderState, now);
+        const record = taskReminderState[userTask.id];
+        let status = '❌ Not completed';
+
+        if (monthlyCount > 0 && record?.lastCompleted) {
+          const lastCompleted = new Date(record.lastCompleted);
+          const daysSince = Math.floor((now.getTime() - lastCompleted.getTime()) / (1000 * 60 * 60 * 24));
+          status = `✅ Completed (${daysSince} days ago)`;
+        }
+
+        report += `${taskDef.icon || '📝'} ${taskDef.title}\n`;
+        report += `   Status: ${status}\n`;
+        report += `\n`;
+      });
+    }
+
+    // Footer
+    report += `${'='.repeat(50)}\n`;
+    report += `Generated by CatAble - Your Cat's Health Companion\n`;
+    report += `This report should be used as a reference for veterinary consultations.\n`;
+
+    return report;
+  }
+}
+
+export default new PdfReportService();

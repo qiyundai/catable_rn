@@ -422,6 +422,9 @@ const ProfileScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
+              {/* Shared floating selection bar - rendered first so it's behind */}
+              <View style={styles.sharedSelectionBar} pointerEvents="none" />
+              
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Hour</Text>
                 <WheelPicker
@@ -431,6 +434,7 @@ const ProfileScreen: React.FC = () => {
                     ...prev,
                     hour: hourOptions[index].value
                   }))}
+                  showSelectionIndicator={false}
                 />
               </View>
 
@@ -443,6 +447,7 @@ const ProfileScreen: React.FC = () => {
                     ...prev,
                     minute: minuteOptions[index].value
                   }))}
+                  showSelectionIndicator={false}
                 />
               </View>
 
@@ -455,6 +460,7 @@ const ProfileScreen: React.FC = () => {
                     ...prev,
                     period: periodOptions[index].value === 0 ? 'AM' : 'PM'
                   }))}
+                  showSelectionIndicator={false}
                 />
               </View>
             </View>
@@ -704,6 +710,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
+    position: 'relative',
   },
   wheelColumn: {
     flex: 1,
@@ -715,6 +722,25 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
     fontWeight: '600',
+  },
+  sharedSelectionBar: {
+    position: 'absolute',
+    left: SPACING.lg,
+    right: SPACING.lg,
+    height: 40,
+    top: '50%',
+    marginTop: 8, // Adjust for label height (20px caption + 8px margin)
+    backgroundColor: COLORS.gray,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+    zIndex: -1, // Behind the text
   },
 });
 
