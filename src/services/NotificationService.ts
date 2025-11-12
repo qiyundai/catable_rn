@@ -175,7 +175,8 @@ class NotificationService {
   }
 
   /**
-   * Schedule reminders for all user tasks based on their cycles
+   * Schedule a single daily reminder for all user tasks
+   * This sends ONE notification per day, not one per task per cat
    */
   async scheduleTaskReminders(
     userTasks: UserTasks,
@@ -194,106 +195,49 @@ class NotificationService {
     // Get all tasks that should be shown today
     const tasksForToday = TaskReminderService.getTasksForToday(userTasks, reminderState);
 
-    // Schedule daily task reminders
-    for (const task of tasksForToday.daily) {
-      await this.scheduleTaskReminder(task, 'daily', hour, minute, petName);
+    // Calculate total tasks for today
+    const totalTasks = tasksForToday.daily.length + tasksForToday.weekly.length + tasksForToday.monthly.length;
+
+    // Only schedule one daily notification
+    if (totalTasks > 0) {
+      const content = {
+        title: `Time to check on ${petName}! 🐱`,
+        body: `You have ${totalTasks} task${totalTasks > 1 ? 's' : ''} to complete today`,
+        data: { type: 'daily_task_reminder' },
+      };
+
+      const trigger: Notifications.DailyTriggerInput = {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute,
+      };
+
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger,
+      });
     }
-
-    // Schedule weekly task reminders
-    for (const task of tasksForToday.weekly) {
-      await this.scheduleTaskReminder(task, 'weekly', hour, minute, petName);
-    }
-
-    // Schedule monthly task reminders
-    for (const task of tasksForToday.monthly) {
-      await this.scheduleTaskReminder(task, 'monthly', hour, minute, petName);
-    }
-  }
-
-  /**
-   * Schedule a single task reminder based on its cycle
-   */
-  private async scheduleTaskReminder(
-    task: { id: string; name: string },
-    cycle: 'daily' | 'weekly' | 'monthly',
-    hour: number,
-    minute: number,
-    petName: string
-  ): Promise<string> {
-    const content = {
-      title: `Time to log: ${task.name} 🐱`,
-      body: `Don't forget to log ${petName}'s ${task.name.toLowerCase()}`,
-      data: { taskId: task.id, type: 'task_reminder' },
-    };
-
-    let trigger: Notifications.NotificationTriggerInput;
-
-    switch (cycle) {
-      case 'daily':
-        trigger = {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        };
-        break;
-
-      case 'weekly':
-        // Schedule for today, then repeat weekly
-        const today = new Date();
-        
-        trigger = {
-          type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-          hour,
-          minute,
-          weekday: today.getDay() + 1, // 1-7 (Sunday = 1)
-        };
-        break;
-
-      case 'monthly':
-        // Schedule for today, then repeat monthly
-        const todayMonthly = new Date();
-        const nextMonth = new Date(todayMonthly);
-        nextMonth.setMonth(nextMonth.getMonth() + 1);
-        
-        // For monthly, we'll use a date trigger
-        // Note: Expo doesn't support monthly repeats directly, so we'll schedule for next month
-        trigger = {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: nextMonth,
-        };
-        break;
-
-      default:
-        trigger = {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        };
-    }
-
-    return await Notifications.scheduleNotificationAsync({
-      content,
-      trigger,
-    });
   }
 
   /**
    * Reschedule all task reminders (call when tasks are completed or cycle changes)
+   * Also used when the reminder time is updated
    */
   async rescheduleTaskReminders(
     userTasks: UserTasks,
     reminderState: TaskReminderState,
     petName: string = 'your cat'
   ): Promise<void> {
-    // Cancel all existing task reminders
+    // Cancel all existing task reminders (including the daily reminder)
     const allNotifications = await this.getScheduledNotifications();
     for (const notification of allNotifications) {
-      if (notification.content.data?.type === 'task_reminder') {
+      if (notification.content.data?.type === 'task_reminder' || 
+          notification.content.data?.type === 'daily_task_reminder') {
         await Notifications.cancelScheduledNotificationAsync(notification.identifier);
       }
     }
 
-    // Schedule new reminders
+    // Schedule new consolidated reminder
     await this.scheduleTaskReminders(userTasks, reminderState, petName);
   }
 }

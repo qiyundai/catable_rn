@@ -5,9 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING, REGION_OPTIONS } from '../constants';
+import WheelPicker from '../components/WheelPicker';
+import NotificationService from '../services/NotificationService';
 
 const ProfileScreen: React.FC = () => {
-  const { user, setUser, signOut } = useAppStore();
+  const { user, setUser, signOut, userTasks, setUserTasks, taskReminderState, pets } = useAppStore();
   const [userPhoto, setUserPhoto] = useState<string | null>(user?.avatar || null);
   const [isEditing, setIsEditing] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
@@ -16,6 +18,32 @@ const ProfileScreen: React.FC = () => {
     email: user?.email || '',
     region: user?.region || '',
   });
+
+  // Reminder time management states
+  const [showReminderTimePicker, setShowReminderTimePicker] = useState(false);
+  const [tempReminderTime, setTempReminderTime] = useState({
+    hour: userTasks?.reminderTime?.hour || 9,
+    minute: userTasks?.reminderTime?.minute || 0,
+    period: userTasks?.reminderTime?.period || 'AM' as 'AM' | 'PM',
+  });
+
+  // Wheel picker data arrays
+  const hourOptions = Array.from({ length: 12 }, (_, i) => ({
+    label: (i + 1).toString(),
+    value: i + 1
+  }));
+
+  const minuteOptions = [
+    { label: '00', value: 0 },
+    { label: '15', value: 15 },
+    { label: '30', value: 30 },
+    { label: '45', value: 45 }
+  ];
+
+  const periodOptions = [
+    { label: 'AM', value: 0 },
+    { label: 'PM', value: 1 }
+  ];
 
   // Update photo when user changes
   React.useEffect(() => {
@@ -134,6 +162,60 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
+  // Reminder time handlers
+  const openReminderTimePicker = () => {
+    setTempReminderTime({
+      hour: userTasks?.reminderTime?.hour || 9,
+      minute: userTasks?.reminderTime?.minute || 0,
+      period: userTasks?.reminderTime?.period || 'AM',
+    });
+    setShowReminderTimePicker(true);
+  };
+
+  const cancelReminderTimePicker = () => {
+    setShowReminderTimePicker(false);
+  };
+
+  const saveReminderTimePicker = async () => {
+    if (!userTasks) {
+      Alert.alert('Error', 'No tasks configured yet');
+      setShowReminderTimePicker(false);
+      return;
+    }
+
+    try {
+      // Update user tasks with new reminder time
+      const updatedTasks = {
+        ...userTasks,
+        reminderTime: tempReminderTime,
+      };
+      setUserTasks(updatedTasks);
+
+      // Cancel all existing task reminders to prevent double notifications
+      await NotificationService.cancelAllReminders();
+
+      // Reschedule with new time
+      const petName = pets.length > 0 ? pets[0].name : 'your cat';
+      await NotificationService.rescheduleTaskReminders(
+        updatedTasks,
+        taskReminderState,
+        petName
+      );
+
+      setShowReminderTimePicker(false);
+      Alert.alert('Success', 'Reminder time updated successfully');
+    } catch (error) {
+      console.error('Error updating reminder time:', error);
+      Alert.alert('Error', 'Failed to update reminder time');
+    }
+  };
+
+  const formatReminderTime = () => {
+    if (!userTasks?.reminderTime) return 'Not set';
+    const { hour, minute, period } = userTasks.reminderTime;
+    return `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -237,6 +319,39 @@ const ProfileScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Notifications & Reminders Section */}
+        {userTasks && (
+          <View style={styles.infoSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Notifications & Reminders</Text>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.infoItem}
+              onPress={openReminderTimePicker}
+            >
+              <Ionicons name="alarm-outline" size={24} color={COLORS.textSecondary} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Daily Reminder Time</Text>
+                <View style={styles.reminderTimeRow}>
+                  <Text style={styles.infoValue}>{formatReminderTime()}</Text>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <View style={[styles.infoItem, styles.lastInfoItem]}>
+              <Ionicons name="information-circle-outline" size={24} color={COLORS.textSecondary} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Note</Text>
+                <Text style={styles.infoNote}>
+                  You'll receive one daily reminder at this time to complete your tasks
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Sign Out Button */}
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
@@ -284,6 +399,65 @@ const ProfileScreen: React.FC = () => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Reminder Time Picker Modal */}
+      <Modal
+        visible={showReminderTimePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelReminderTimePicker}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <TouchableOpacity onPress={cancelReminderTimePicker}>
+                <Text style={styles.pickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.pickerTitle}>Set Reminder Time</Text>
+              <TouchableOpacity onPress={saveReminderTimePicker}>
+                <Text style={styles.pickerSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.wheelContainer}>
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Hour</Text>
+                <WheelPicker
+                  items={hourOptions}
+                  selectedIndex={hourOptions.findIndex(opt => opt.value === tempReminderTime.hour)}
+                  onSelectionChange={(index) => setTempReminderTime(prev => ({
+                    ...prev,
+                    hour: hourOptions[index].value
+                  }))}
+                />
+              </View>
+
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Minute</Text>
+                <WheelPicker
+                  items={minuteOptions}
+                  selectedIndex={minuteOptions.findIndex(opt => opt.value === tempReminderTime.minute)}
+                  onSelectionChange={(index) => setTempReminderTime(prev => ({
+                    ...prev,
+                    minute: minuteOptions[index].value
+                  }))}
+                />
+              </View>
+
+              <View style={styles.wheelColumn}>
+                <Text style={styles.wheelLabel}>Period</Text>
+                <WheelPicker
+                  items={periodOptions}
+                  selectedIndex={tempReminderTime.period === 'AM' ? 0 : 1}
+                  onSelectionChange={(index) => setTempReminderTime(prev => ({
+                    ...prev,
+                    period: periodOptions[index].value === 0 ? 'AM' : 'PM'
+                  }))}
+                />
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
@@ -514,6 +688,33 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: 'bold',
     fontSize: 18,
+  },
+  reminderTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  infoNote: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  wheelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  wheelColumn: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: SPACING.sm,
+  },
+  wheelLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
+    fontWeight: '600',
   },
 });
 
