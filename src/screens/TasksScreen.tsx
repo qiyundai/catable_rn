@@ -84,13 +84,15 @@ const TasksScreen: React.FC = () => {
       const taskDef = getTaskByOldId(userTask.id) || getTaskById(userTask.id);
       if (!taskDef) return false;
 
-      // Get the actual frequency (custom or default)
-      const actualFrequency = getTaskFrequency(currentPet.id, userTask.id) || taskDef.recurringCycle || 'daily';
+      // Get the actual frequency (custom or default) - pass directly to TaskReminderService
+      const customFrequency = getTaskFrequency(currentPet.id, userTask.id);
       
       // Check if task should be shown today based on its actual frequency
       return TaskReminderService.shouldShowTaskToday(
-        { ...userTask, recurringCycle: actualFrequency },
-        taskReminderState
+        userTask,
+        taskReminderState,
+        new Date(),
+        customFrequency
       );
     });
 
@@ -516,19 +518,15 @@ const TasksScreen: React.FC = () => {
     return null;
   };
 
-  // Convert number + period to frequency
-  const convertToFrequency = (number: number, period: 'day' | 'week' | 'month'): 'daily' | 'weekly' | 'monthly' => {
-    if (period === 'day' && number === 1) return 'daily';
-    if (period === 'week' && number === 1) return 'weekly';
-    if (period === 'month' && number === 1) return 'monthly';
-    // For now, map to closest standard frequency
-    if (period === 'day') return 'daily';
-    if (period === 'week') return 'weekly';
-    return 'monthly';
-  };
-
-  // Convert frequency to number + period
-  const convertFromFrequency = (frequency: 'daily' | 'weekly' | 'monthly'): { number: number; period: 'day' | 'week' | 'month' } => {
+  // Convert TaskFrequency to number + period (handles both old string format and new object format)
+  const convertFromFrequency = (frequency: 'daily' | 'weekly' | 'monthly' | { number: number; period: 'day' | 'week' | 'month' } | null): { number: number; period: 'day' | 'week' | 'month' } => {
+    if (!frequency) {
+      return { number: 1, period: 'day' };
+    }
+    if (typeof frequency === 'object') {
+      return frequency;
+    }
+    // Handle old string format
     switch (frequency) {
       case 'daily':
         return { number: 1, period: 'day' };
@@ -541,8 +539,12 @@ const TasksScreen: React.FC = () => {
 
   const handleFrequencyChange = () => {
     if (selectedTaskForFrequency && currentPet) {
-      const frequency = convertToFrequency(selectedNumber, selectedPeriod);
-      setTaskFrequency(currentPet.id, selectedTaskForFrequency.id, frequency);
+      // Store the custom frequency as an object with number + period
+      const customFrequency: { number: number; period: 'day' | 'week' | 'month' } = {
+        number: selectedNumber,
+        period: selectedPeriod,
+      };
+      setTaskFrequency(currentPet.id, selectedTaskForFrequency.id, customFrequency);
       setFrequencyModalVisible(false);
       setSelectedTaskForFrequency(null);
     }
@@ -558,7 +560,7 @@ const TasksScreen: React.FC = () => {
     }
   }, [selectedTaskForFrequency?.id, frequencyModalVisible]);
 
-  const getCurrentFrequency = (task: TaskDefinition): 'daily' | 'weekly' | 'monthly' => {
+  const getCurrentFrequency = (task: TaskDefinition): 'daily' | 'weekly' | 'monthly' | { number: number; period: 'day' | 'week' | 'month' } => {
     if (!currentPet) return task.recurringCycle || 'daily';
     const customFrequency = getTaskFrequency(currentPet.id, task.id);
     return customFrequency || task.recurringCycle || 'daily';

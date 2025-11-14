@@ -4,11 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, Pet, Log, Task, Streak, Achievement, AppState, UserTasks } from '../types';
 import { TaskReminderState } from '../services/TaskReminderService';
 
+// Task frequency can be stored as either the old format (string) or new format (object)
+export type TaskFrequency = 'daily' | 'weekly' | 'monthly' | { number: number; period: 'day' | 'week' | 'month' };
+
 interface AppStore extends AppState {
   // Task reminder state
   taskReminderState: TaskReminderState;
-  // Custom task frequencies per pet: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } }
-  taskFrequencies: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } };
+  // Custom task frequencies per pet: supports both old format (string) and new format (object with number + period)
+  taskFrequencies: { [petId: string]: { [taskId: string]: TaskFrequency } };
   
   // Actions
   setUser: (user: User | null) => void;
@@ -25,8 +28,8 @@ interface AppStore extends AppState {
   setTaskReminderState: (state: TaskReminderState) => void;
   markTaskAsShown: (taskId: string) => void;
   markTaskAsCompleted: (taskId: string) => void;
-  setTaskFrequency: (petId: string, taskId: string, frequency: 'daily' | 'weekly' | 'monthly') => void;
-  getTaskFrequency: (petId: string, taskId: string) => 'daily' | 'weekly' | 'monthly' | null;
+  setTaskFrequency: (petId: string, taskId: string, frequency: TaskFrequency) => void;
+  getTaskFrequency: (petId: string, taskId: string) => TaskFrequency | null;
   
   // Streak actions
   updateStreak: (petId: string, streak: Streak) => void;
@@ -54,7 +57,7 @@ interface AppStore extends AppState {
   signOut: () => void;
 }
 
-const initialState: AppState & { taskReminderState: TaskReminderState; taskFrequencies: { [petId: string]: { [taskId: string]: 'daily' | 'weekly' | 'monthly' } } } = {
+const initialState: AppState & { taskReminderState: TaskReminderState; taskFrequencies: { [petId: string]: { [taskId: string]: TaskFrequency } } } = {
   user: null,
   pets: [],
   currentPet: null,

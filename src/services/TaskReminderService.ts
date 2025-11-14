@@ -1,5 +1,6 @@
 import { UserTask, UserTasks } from '../types';
 import { TaskDefinition, getTaskById, getTaskByOldId } from '../constants/tasks';
+import { TaskFrequency } from '../store';
 
 export interface TaskCompletionRecord {
   taskId: string;
@@ -15,15 +16,51 @@ export interface TaskReminderState {
 
 class TaskReminderService {
   /**
+   * Convert TaskFrequency to days
+   */
+  private frequencyToDays(frequency: TaskFrequency): number {
+    if (typeof frequency === 'object') {
+      // Custom frequency: number + period
+      const { number, period } = frequency;
+      if (period === 'day') return number;
+      if (period === 'week') return number * 7;
+      if (period === 'month') return number * 30; // Approximate month as 30 days
+      return number;
+    }
+    // Legacy string format
+    switch (frequency) {
+      case 'daily':
+        return 1;
+      case 'weekly':
+        return 7;
+      case 'monthly':
+        return 30;
+      default:
+        return 1;
+    }
+  }
+
+  /**
    * Determines if a task should be shown today based on its cycle
+   * Now accepts TaskFrequency (supports both old string format and new object format)
    */
   shouldShowTaskToday(
     task: UserTask | TaskDefinition,
     reminderState: TaskReminderState,
-    today: Date = new Date()
+    today: Date = new Date(),
+    customFrequency?: TaskFrequency | null
   ): boolean {
     const taskId = 'id' in task ? task.id : task.id;
-    const cycle = 'recurringCycle' in task ? task.recurringCycle : this.getTaskCycle(taskId);
+    
+    // Use custom frequency if provided, otherwise fall back to task's recurringCycle or default
+    let frequency: TaskFrequency;
+    if (customFrequency !== undefined && customFrequency !== null) {
+      frequency = customFrequency;
+    } else {
+      const cycle = 'recurringCycle' in task ? task.recurringCycle : this.getTaskCycle(taskId);
+      frequency = cycle;
+    }
+    
     const record = reminderState[taskId];
 
     if (!record) {
@@ -31,36 +68,18 @@ class TaskReminderService {
       return true;
     }
 
-    switch (cycle) {
-      case 'daily':
-        // Daily tasks: show every day
-        return true;
-
-      case 'weekly':
-        // Weekly tasks: show today, then 7 days later
-        if (!record.lastShown) {
-          return true; // First time
-        }
-        const lastShown = new Date(record.lastShown);
-        const daysSinceLastShown = Math.floor(
-          (today.getTime() - lastShown.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return daysSinceLastShown >= 7;
-
-      case 'monthly':
-        // Monthly tasks: show today, then next month (approximately 30 days)
-        if (!record.lastShown) {
-          return true; // First time
-        }
-        const lastShownMonthly = new Date(record.lastShown);
-        const daysSinceLastShownMonthly = Math.floor(
-          (today.getTime() - lastShownMonthly.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return daysSinceLastShownMonthly >= 30;
-
-      default:
-        return false;
+    if (!record.lastShown) {
+      return true; // First time
     }
+
+    // Calculate days based on frequency
+    const daysInterval = this.frequencyToDays(frequency);
+    const lastShown = new Date(record.lastShown);
+    const daysSinceLastShown = Math.floor(
+      (today.getTime() - lastShown.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    
+    return daysSinceLastShown >= daysInterval;
   }
 
   /**
@@ -206,30 +225,32 @@ class TaskReminderService {
 
   /**
    * Calculate next reminder date for a task
+   * Now accepts TaskFrequency (supports both old string format and new object format)
    */
   getNextReminderDate(
     task: UserTask | TaskDefinition,
     reminderState: TaskReminderState,
-    today: Date = new Date()
+    today: Date = new Date(),
+    customFrequency?: TaskFrequency | null
   ): Date {
     const taskId = 'id' in task ? task.id : task.id;
-    const cycle = 'recurringCycle' in task ? task.recurringCycle : this.getTaskCycle(taskId);
+    
+    // Use custom frequency if provided, otherwise fall back to task's recurringCycle or default
+    let frequency: TaskFrequency;
+    if (customFrequency !== undefined && customFrequency !== null) {
+      frequency = customFrequency;
+    } else {
+      const cycle = 'recurringCycle' in task ? task.recurringCycle : this.getTaskCycle(taskId);
+      frequency = cycle;
+    }
+    
     const record = reminderState[taskId];
     const lastShown = record?.lastShown ? new Date(record.lastShown) : today;
-
     const nextDate = new Date(lastShown);
 
-    switch (cycle) {
-      case 'daily':
-        nextDate.setDate(nextDate.getDate() + 1);
-        break;
-      case 'weekly':
-        nextDate.setDate(nextDate.getDate() + 7);
-        break;
-      case 'monthly':
-        nextDate.setMonth(nextDate.getMonth() + 1);
-        break;
-    }
+    // Calculate days to add based on frequency
+    const daysInterval = this.frequencyToDays(frequency);
+    nextDate.setDate(nextDate.getDate() + daysInterval);
 
     return nextDate;
   }

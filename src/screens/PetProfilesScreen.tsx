@@ -29,7 +29,7 @@ import { Ionicons } from '@expo/vector-icons';
 type PetProfilesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const PetProfilesScreen: React.FC = () => {
-  const { pets, currentPet, setCurrentPet, userTasks, taskReminderState, updatePet } = useAppStore();
+  const { pets, currentPet, setCurrentPet, userTasks, taskReminderState, updatePet, setTaskFrequency, getTaskFrequency } = useAppStore();
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
@@ -39,7 +39,8 @@ const PetProfilesScreen: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState(0);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [currentTaskFrequency, setCurrentTaskFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [selectedNumber, setSelectedNumber] = useState(1);
+  const [selectedPeriod, setSelectedPeriod] = useState<'day' | 'week' | 'month'>('day');
   const navigation = useNavigation<PetProfilesScreenNavigationProp>();
 
   // Wheel picker options for age
@@ -53,6 +54,24 @@ const PetProfilesScreen: React.FC = () => {
     value: i
   }));
 
+  // Convert TaskFrequency to number + period (handles both old string format and new object format)
+  const convertFromFrequency = (frequency: 'daily' | 'weekly' | 'monthly' | { number: number; period: 'day' | 'week' | 'month' } | null): { number: number; period: 'day' | 'week' | 'month' } => {
+    if (!frequency) {
+      return { number: 1, period: 'day' };
+    }
+    if (typeof frequency === 'object') {
+      return frequency;
+    }
+    // Handle old string format
+    switch (frequency) {
+      case 'daily':
+        return { number: 1, period: 'day' };
+      case 'weekly':
+        return { number: 1, period: 'week' };
+      case 'monthly':
+        return { number: 1, period: 'month' };
+    }
+  };
 
   // Generate real monthly data for the pet based on task completion history
   const generateMonthlyData = (petId: string) => {
@@ -250,13 +269,16 @@ const PetProfilesScreen: React.FC = () => {
 
   const openPicker = (type: 'breed' | 'gender' | 'age' | 'taskFrequency', taskId?: string) => {
     setPickerType(type);
-    if (type === 'taskFrequency' && taskId && userTasks) {
+    if (type === 'taskFrequency' && taskId && currentPet) {
       setEditingTaskId(taskId);
-      // Find the task's current frequency
-      const task = [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly].find(t => t.id === taskId);
-      if (task) {
-        setCurrentTaskFrequency(task.recurringCycle);
-      }
+      // Get the task's current frequency from the store (supports both old and new format)
+      const storedFrequency = getTaskFrequency(currentPet.id, taskId);
+      // If not in store, get from task's default recurringCycle
+      const task = userTasks ? [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly].find(t => t.id === taskId) : null;
+      const frequency = storedFrequency || (task?.recurringCycle || 'daily');
+      const { number, period } = convertFromFrequency(frequency);
+      setSelectedNumber(number);
+      setSelectedPeriod(period);
     }
     setShowPickerModal(true);
   };
@@ -264,8 +286,69 @@ const PetProfilesScreen: React.FC = () => {
   const handlePickerSelect = (value: string) => {
     if (pickerType === 'breed') {
       setEditForm({ ...editForm, breed: value });
+      setShowPickerModal(false);
     } else if (pickerType === 'gender') {
       setEditForm({ ...editForm, gender: value as 'male' | 'female' | 'other' });
+      setShowPickerModal(false);
+    }
+  };
+
+  const handleTaskFrequencyConfirm = () => {
+    if (editingTaskId && currentPet && userTasks) {
+      // Store the custom frequency as an object with number + period
+      const customFrequency: { number: number; period: 'day' | 'week' | 'month' } = {
+        number: selectedNumber,
+        period: selectedPeriod,
+      };
+      
+      // Save to store using setTaskFrequency
+      setTaskFrequency(currentPet.id, editingTaskId, customFrequency);
+      
+      // Also update the task's recurringCycle in userTasks for backward compatibility
+      // Convert to standard frequency for the recurringCycle field
+      let standardFrequency: 'daily' | 'weekly' | 'monthly';
+      if (selectedPeriod === 'day' && selectedNumber === 1) {
+        standardFrequency = 'daily';
+      } else if (selectedPeriod === 'week' && selectedNumber === 1) {
+        standardFrequency = 'weekly';
+      } else if (selectedPeriod === 'month' && selectedNumber === 1) {
+        standardFrequency = 'monthly';
+      } else {
+        // For custom frequencies, map to closest standard
+        standardFrequency = selectedPeriod === 'day' ? 'daily' : selectedPeriod === 'week' ? 'weekly' : 'monthly';
+      }
+      
+      // Find which array the task is currently in
+      const allTasks = [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly];
+      const task = allTasks.find(t => t.id === editingTaskId);
+      
+      if (task) {
+        // Remove task from current array
+        let newDaily = userTasks.daily.filter(t => t.id !== editingTaskId);
+        let newWeekly = userTasks.weekly.filter(t => t.id !== editingTaskId);
+        let newMonthly = userTasks.monthly.filter(t => t.id !== editingTaskId);
+
+        // Update task with new frequency
+        const updatedTask = { ...task, recurringCycle: standardFrequency };
+
+        // Add to appropriate array based on standard frequency
+        if (standardFrequency === 'daily') {
+          newDaily.push(updatedTask);
+        } else if (standardFrequency === 'weekly') {
+          newWeekly.push(updatedTask);
+        } else {
+          newMonthly.push(updatedTask);
+        }
+
+        // Update the store
+        const { setUserTasks } = useAppStore.getState();
+        setUserTasks({
+          ...userTasks,
+          daily: newDaily,
+          weekly: newWeekly,
+          monthly: newMonthly,
+        });
+      }
     }
     setShowPickerModal(false);
   };
@@ -399,24 +482,38 @@ const PetProfilesScreen: React.FC = () => {
               />
             </View>
 
-            {userTasks && (
-              <View style={styles.taskFrequencySection}>
-                <Text style={styles.sectionSubtitle}>Task Frequency</Text>
-                {[...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly].map((task) => (
-                  <View key={task.id} style={styles.formFieldContainer}>
-                    <Text style={styles.formLabel}>{task.name}</Text>
-                    <TouchableOpacity 
-                      style={styles.formInput}
-                      onPress={() => openPicker('taskFrequency', task.id)}
-                    >
-                      <Text style={styles.formInputText}>
-                        {task.recurringCycle.charAt(0).toUpperCase() + task.recurringCycle.slice(1)}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
+            {userTasks && (() => {
+              // Create a stable sorted list of all tasks to prevent reordering
+              const allTasks = [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly];
+              const sortedTasks = [...allTasks].sort((a, b) => a.id.localeCompare(b.id));
+              
+              return (
+                <View style={styles.taskFrequencySection}>
+                  <Text style={styles.sectionSubtitle}>Task Frequency</Text>
+                  {sortedTasks.map((task) => {
+                    // Get the actual frequency from store to display correctly
+                    const storedFrequency = currentPet ? getTaskFrequency(currentPet.id, task.id) : null;
+                    const displayFrequency = storedFrequency || task.recurringCycle || 'daily';
+                    const { number, period } = convertFromFrequency(displayFrequency);
+                    const displayText = number === 1 
+                      ? (period === 'day' ? 'Daily' : period === 'week' ? 'Weekly' : 'Monthly')
+                      : `${number} ${period}${number > 1 ? 's' : ''}`;
+                    
+                    return (
+                      <View key={task.id} style={styles.formFieldContainer}>
+                        <Text style={styles.formLabel}>{task.name}</Text>
+                        <TouchableOpacity 
+                          style={styles.formInput}
+                          onPress={() => openPicker('taskFrequency', task.id)}
+                        >
+                          <Text style={styles.formInputText}>{displayText}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })()}
 
             <View style={styles.editActions}>
               <TouchableOpacity 
@@ -555,41 +652,7 @@ const PetProfilesScreen: React.FC = () => {
               </Text>
               <TouchableOpacity onPress={
                 pickerType === 'age' ? handleAgeConfirm :
-                pickerType === 'taskFrequency' ? () => {
-                  // Save the task frequency
-                  if (editingTaskId && userTasks) {
-                    const allTasks = [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly];
-                    const task = allTasks.find(t => t.id === editingTaskId);
-                    
-                    if (task) {
-                      const updatedTask = { ...task, recurringCycle: currentTaskFrequency };
-                      
-                      // Remove from old array
-                      const newDaily = userTasks.daily.filter(t => t.id !== editingTaskId);
-                      const newWeekly = userTasks.weekly.filter(t => t.id !== editingTaskId);
-                      const newMonthly = userTasks.monthly.filter(t => t.id !== editingTaskId);
-                      
-                      // Add to new array
-                      if (currentTaskFrequency === 'daily') {
-                        newDaily.push(updatedTask);
-                      } else if (currentTaskFrequency === 'weekly') {
-                        newWeekly.push(updatedTask);
-                      } else {
-                        newMonthly.push(updatedTask);
-                      }
-                      
-                      // Update store
-                      const { setUserTasks } = useAppStore.getState();
-                      setUserTasks({
-                        ...userTasks,
-                        daily: newDaily,
-                        weekly: newWeekly,
-                        monthly: newMonthly,
-                      });
-                    }
-                  }
-                  setShowPickerModal(false);
-                } :
+                pickerType === 'taskFrequency' ? handleTaskFrequencyConfirm :
                 () => setShowPickerModal(false)
               }>
                 <Text style={styles.pickerSaveText}>Done</Text>
@@ -624,20 +687,34 @@ const PetProfilesScreen: React.FC = () => {
               <View style={styles.wheelContainer}>
                 <View style={styles.sharedSelectionBar} pointerEvents="none" />
                 
-                <View style={styles.wheelColumnSingle}>
+                <View style={styles.wheelColumn}>
+                  <WheelPicker
+                    items={Array.from({ length: selectedPeriod === 'day' ? 30 : 12 }, (_, i) => ({
+                      label: (i + 1).toString(),
+                      value: i + 1,
+                    }))}
+                    selectedIndex={Math.min(selectedNumber - 1, (selectedPeriod === 'day' ? 30 : 12) - 1)}
+                    onSelectionChange={(index) => setSelectedNumber(index + 1)}
+                    showSelectionIndicator={false}
+                  />
+                </View>
+                <View style={styles.wheelColumn}>
                   <WheelPicker
                     items={[
-                      { label: 'Daily', value: 'daily' },
-                      { label: 'Weekly', value: 'weekly' },
-                      { label: 'Monthly', value: 'monthly' },
+                      { label: 'day(s)', value: 0 },
+                      { label: 'week(s)', value: 1 },
+                      { label: 'month(s)', value: 2 },
                     ]}
-                    selectedIndex={
-                      currentTaskFrequency === 'daily' ? 0 :
-                      currentTaskFrequency === 'weekly' ? 1 : 2
-                    }
+                    selectedIndex={selectedPeriod === 'day' ? 0 : selectedPeriod === 'week' ? 1 : 2}
                     onSelectionChange={(index) => {
-                      const frequencies: ('daily' | 'weekly' | 'monthly')[] = ['daily', 'weekly', 'monthly'];
-                      setCurrentTaskFrequency(frequencies[index]);
+                      const periods: ('day' | 'week' | 'month')[] = ['day', 'week', 'month'];
+                      const newPeriod = periods[index];
+                      setSelectedPeriod(newPeriod);
+                      // Adjust number range based on period
+                      const maxNumber = newPeriod === 'day' ? 30 : 12;
+                      if (selectedNumber > maxNumber) {
+                        setSelectedNumber(maxNumber);
+                      }
                     }}
                     showSelectionIndicator={false}
                   />
@@ -1138,11 +1215,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: SPACING.sm,
   },
-  wheelColumnSingle: {
-    flex: 1,
-    alignItems: 'center',
-    width: '100%',
-  },
   wheelLabel: {
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
@@ -1155,7 +1227,7 @@ const styles = StyleSheet.create({
     right: SPACING.lg,
     height: 40,
     top: '50%',
-    marginTop: 8,
+    marginTop: -4,
     backgroundColor: COLORS.gray,
     borderRadius: 8,
     shadowColor: '#000',
