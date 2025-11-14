@@ -16,7 +16,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
 import { PetForm, RootStackParamList } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS } from '../constants';
 import WheelPicker from '../components/WheelPicker';
 import { calculateCurrentAgeInMonths } from '../utils/petUtils';
 
@@ -70,7 +70,6 @@ const ManagePetScreen: React.FC = () => {
   const [showAgePicker, setShowAgePicker] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showBreedPicker, setShowBreedPicker] = useState(false);
-  const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
 
   // Initialize age values when component mounts or when existingPet changes
   React.useEffect(() => {
@@ -138,8 +137,8 @@ const ManagePetScreen: React.FC = () => {
       return;
     }
 
-    if (!petForm.personality) {
-      Alert.alert('Error', 'Please select your cat\'s personality');
+    if (!petForm.personality?.trim()) {
+      Alert.alert('Error', 'Please describe your cat\'s personality');
       return;
     }
 
@@ -239,11 +238,19 @@ const ManagePetScreen: React.FC = () => {
             () => setShowBreedPicker(true)
           )}
 
-          {renderFormField(
-            'Personality *',
-            PET_PERSONALITY_OPTIONS.find(opt => opt.value === petForm.personality)?.label || petForm.personality || '',
-            () => setShowPersonalityPicker(true)
-          )}
+          {/* Personality Text Area */}
+          <View style={styles.inputSection}>
+            <Text style={styles.inputLabel}>Personality *</Text>
+            <TextInput
+              style={[styles.textInput, styles.textAreaInput]}
+              placeholder="Describe your cat's personality..."
+              value={petForm.personality}
+              onChangeText={(text) => updatePetForm({ personality: text })}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -366,44 +373,6 @@ const ManagePetScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Personality Picker Modal */}
-      {showPersonalityPicker && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={() => setShowPersonalityPicker(false)}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Personality</Text>
-              <TouchableOpacity onPress={() => setShowPersonalityPicker(false)}>
-                <Text style={styles.pickerSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {PET_PERSONALITY_OPTIONS.map(option => (
-                <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.optionItem,
-                    petForm.personality === option.value && styles.optionItemSelected
-                  ]}
-                  onPress={() => updatePetForm({ personality: option.value })}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    petForm.personality === option.value && styles.optionTextSelected
-                  ]}>
-                    {option.label}
-                  </Text>
-                  {petForm.personality === option.value && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      )}
     </SafeAreaView>
   );
 };
@@ -492,6 +461,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     color: COLORS.text,
+  },
+  textAreaInput: {
+    minHeight: 100,
+    paddingVertical: SPACING.md,
+    textAlignVertical: 'top',
   },
   formField: {
     backgroundColor: COLORS.surface,

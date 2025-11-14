@@ -79,7 +79,7 @@ const ProfileScreen: React.FC = () => {
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri;
         setUserPhoto(imageUri);
-        
+
         // Update user in store
         if (user) {
           setUser({
@@ -326,7 +326,7 @@ const ProfileScreen: React.FC = () => {
               <Text style={styles.sectionTitle}>Notifications & Reminders</Text>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.infoItem}
               onPress={openReminderTimePicker}
             >
@@ -424,7 +424,7 @@ const ProfileScreen: React.FC = () => {
             <View style={styles.wheelContainer}>
               {/* Shared floating selection bar - rendered first so it's behind */}
               <View style={styles.sharedSelectionBar} pointerEvents="none" />
-              
+
               <View style={styles.wheelColumn}>
                 <Text style={styles.wheelLabel}>Hour</Text>
                 <WheelPicker
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   signOutText: {
-    ...TYPOGRAPHY.button,
+    ...TYPOGRAPHY.bodyMedium,
     color: '#FFFFFF',
     marginLeft: SPACING.sm,
     fontWeight: '600',
