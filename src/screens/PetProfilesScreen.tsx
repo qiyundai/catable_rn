@@ -35,9 +35,11 @@ const PetProfilesScreen: React.FC = () => {
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Pet>>({});
   const [showPickerModal, setShowPickerModal] = useState(false);
-  const [pickerType, setPickerType] = useState<'breed' | 'gender' | 'age' | null>(null);
+  const [pickerType, setPickerType] = useState<'breed' | 'gender' | 'age' | 'taskFrequency' | null>(null);
   const [selectedYear, setSelectedYear] = useState(0);
   const [selectedMonth, setSelectedMonth] = useState(0);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [currentTaskFrequency, setCurrentTaskFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const navigation = useNavigation<PetProfilesScreenNavigationProp>();
 
   // Wheel picker options for age
@@ -246,8 +248,16 @@ const PetProfilesScreen: React.FC = () => {
     }
   };
 
-  const openPicker = (type: 'breed' | 'gender' | 'age') => {
+  const openPicker = (type: 'breed' | 'gender' | 'age' | 'taskFrequency', taskId?: string) => {
     setPickerType(type);
+    if (type === 'taskFrequency' && taskId && userTasks) {
+      setEditingTaskId(taskId);
+      // Find the task's current frequency
+      const task = [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly].find(t => t.id === taskId);
+      if (task) {
+        setCurrentTaskFrequency(task.recurringCycle);
+      }
+    }
     setShowPickerModal(true);
   };
 
@@ -389,6 +399,25 @@ const PetProfilesScreen: React.FC = () => {
               />
             </View>
 
+            {userTasks && (
+              <View style={styles.taskFrequencySection}>
+                <Text style={styles.sectionSubtitle}>Task Frequency</Text>
+                {[...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly].map((task) => (
+                  <View key={task.id} style={styles.formFieldContainer}>
+                    <Text style={styles.formLabel}>{task.name}</Text>
+                    <TouchableOpacity 
+                      style={styles.formInput}
+                      onPress={() => openPicker('taskFrequency', task.id)}
+                    >
+                      <Text style={styles.formInputText}>
+                        {task.recurringCycle.charAt(0).toUpperCase() + task.recurringCycle.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <View style={styles.editActions}>
               <TouchableOpacity 
                 style={styles.editActionButton}
@@ -521,9 +550,48 @@ const PetProfilesScreen: React.FC = () => {
               <Text style={styles.pickerTitle}>
                 {pickerType === 'age' ? 'Select Age' :
                  pickerType === 'gender' ? 'Select Gender' :
+                 pickerType === 'taskFrequency' ? 'Select Frequency' :
                  'Select Breed'}
               </Text>
-              <TouchableOpacity onPress={pickerType === 'age' ? handleAgeConfirm : () => setShowPickerModal(false)}>
+              <TouchableOpacity onPress={
+                pickerType === 'age' ? handleAgeConfirm :
+                pickerType === 'taskFrequency' ? () => {
+                  // Save the task frequency
+                  if (editingTaskId && userTasks) {
+                    const allTasks = [...userTasks.daily, ...userTasks.weekly, ...userTasks.monthly];
+                    const task = allTasks.find(t => t.id === editingTaskId);
+                    
+                    if (task) {
+                      const updatedTask = { ...task, recurringCycle: currentTaskFrequency };
+                      
+                      // Remove from old array
+                      const newDaily = userTasks.daily.filter(t => t.id !== editingTaskId);
+                      const newWeekly = userTasks.weekly.filter(t => t.id !== editingTaskId);
+                      const newMonthly = userTasks.monthly.filter(t => t.id !== editingTaskId);
+                      
+                      // Add to new array
+                      if (currentTaskFrequency === 'daily') {
+                        newDaily.push(updatedTask);
+                      } else if (currentTaskFrequency === 'weekly') {
+                        newWeekly.push(updatedTask);
+                      } else {
+                        newMonthly.push(updatedTask);
+                      }
+                      
+                      // Update store
+                      const { setUserTasks } = useAppStore.getState();
+                      setUserTasks({
+                        ...userTasks,
+                        daily: newDaily,
+                        weekly: newWeekly,
+                        monthly: newMonthly,
+                      });
+                    }
+                  }
+                  setShowPickerModal(false);
+                } :
+                () => setShowPickerModal(false)
+              }>
                 <Text style={styles.pickerSaveText}>Done</Text>
               </TouchableOpacity>
             </View>
@@ -548,6 +616,29 @@ const PetProfilesScreen: React.FC = () => {
                     items={monthOptions}
                     selectedIndex={monthOptions.findIndex(opt => opt.value === selectedMonth)}
                     onSelectionChange={(index) => setSelectedMonth(monthOptions[index].value)}
+                    showSelectionIndicator={false}
+                  />
+                </View>
+              </View>
+            ) : pickerType === 'taskFrequency' ? (
+              <View style={styles.wheelContainer}>
+                <View style={styles.sharedSelectionBar} pointerEvents="none" />
+                
+                <View style={styles.wheelColumnSingle}>
+                  <WheelPicker
+                    items={[
+                      { label: 'Daily', value: 'daily' },
+                      { label: 'Weekly', value: 'weekly' },
+                      { label: 'Monthly', value: 'monthly' },
+                    ]}
+                    selectedIndex={
+                      currentTaskFrequency === 'daily' ? 0 :
+                      currentTaskFrequency === 'weekly' ? 1 : 2
+                    }
+                    onSelectionChange={(index) => {
+                      const frequencies: ('daily' | 'weekly' | 'monthly')[] = ['daily', 'weekly', 'monthly'];
+                      setCurrentTaskFrequency(frequencies[index]);
+                    }}
                     showSelectionIndicator={false}
                   />
                 </View>
@@ -886,11 +977,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   editForm: {
-    marginTop: SPACING.lg,
-    paddingTop: SPACING.md,
+    marginTop: SPACING.md,
+    paddingTop: SPACING.sm,
   },
   formFieldContainer: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     width: '100%',
   },
   formLabel: {
@@ -918,6 +1009,16 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  taskFrequencySection: {
+    marginTop: SPACING.lg,
+    paddingTop: SPACING.md,
+  },
+  sectionSubtitle: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginBottom: SPACING.md,
+  },
   personalitySection: {
     alignItems: 'center',
   },
@@ -931,7 +1032,7 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: SPACING.lg,
+    marginTop: SPACING.md,
     gap: SPACING.md,
   },
   editActionButton: {
@@ -1036,6 +1137,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     marginHorizontal: SPACING.sm,
+  },
+  wheelColumnSingle: {
+    flex: 1,
+    alignItems: 'center',
+    width: '100%',
   },
   wheelLabel: {
     ...TYPOGRAPHY.caption,
