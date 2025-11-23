@@ -49,7 +49,18 @@ const CardDeck: React.FC<CardDeckProps> = ({
   // Max width ensures cards don't get too wide on tablets
   const effectiveCardWidth = cardWidth || Math.min(screenWidth * 0.95, 400);
   // Use flexible height that adapts to content but respects max
-  const effectiveCardHeight = cardHeight || Math.min(screenHeight * 0.65, 600);
+  // Account for button overlap (28px), tab bar height (~80px), and bottom padding to avoid overlapping
+  const buttonOverlap = 28; // Half of button height (56px / 2)
+  const tabBarHeight = 80; // Approximate tab bar height (including floating button)
+  const bottomPadding = 32; // Extra spacing below deck wrapper
+  // Calculate available height: screen height minus tab bar, button overlap, and padding
+  // Use a responsive percentage based on screen height - smaller screens get less height
+  const availableHeight = screenHeight - tabBarHeight - buttonOverlap - bottomPadding;
+  // Use a percentage of available height, with a minimum to ensure usability
+  // Smaller screens (like iPhone 13 Pro) will get a smaller percentage
+  const heightPercentage = screenHeight < 900 ? 0.5 : 0.55; // 50% for smaller screens, 55% for larger
+  const calculatedHeight = availableHeight * heightPercentage;
+  const effectiveCardHeight = cardHeight || Math.max(350, Math.min(calculatedHeight, 650));
 
   const handlePrimaryAction = () => {
     if (primaryButtonDisabled) return;
@@ -122,7 +133,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
           ]}
         >
           {/* Outer container for shadow - no overflow to allow shadow to render */}
-          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, height: effectiveCardHeight }]}>
+          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, maxHeight: effectiveCardHeight }]}>
             {/* Inner container for content clipping */}
             <View style={styles.cardContentContainer}>
               <View style={styles.cardInnerContainer}>
@@ -135,7 +146,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
                   {renderCard(item, index, relativeIndex, true)}
                 </ScrollView>
               </View>
-              {/* Buttons on top card */}
+              {/* Buttons on top card - positioned to hang halfway out */}
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={[styles.button, styles.secondaryButton]}
@@ -180,7 +191,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
           ]}
         >
           {/* Outer container for shadow - no overflow to allow shadow to render */}
-          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, height: effectiveCardHeight }]}>
+          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, maxHeight: effectiveCardHeight - peekHeight * relativeIndex }]}>
             {/* Inner container for content clipping */}
             <View style={styles.cardContentContainer}>
               <View style={styles.cardInnerContainer}>
@@ -207,7 +218,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
           {/* Completion content will be rendered by parent */}
         </View>
       ) : visibleCards.length > 0 ? (
-        <View style={[styles.deckWrapper, { minHeight: effectiveCardHeight, paddingTop: 20 }]}>
+        <View style={[styles.deckWrapper, { paddingTop: 20, paddingBottom: 40 }]}>
           {/* Render background cards first (behind) - absolute positioned */}
           {visibleCards.slice(1).reverse().map(({ item, index }, reverseIndex) => {
             const relativeIndex = visibleCards.length - 1 - reverseIndex;
@@ -231,6 +242,7 @@ const styles = StyleSheet.create({
   },
   deckWrapper: {
     width: '100%',
+    height: 'auto',
     alignItems: 'center',
     justifyContent: 'flex-start',
     position: 'relative',
@@ -259,12 +271,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 20,
-    overflow: 'hidden',
     flexDirection: 'column',
+    position: 'relative', // Needed for absolute positioned buttons
   },
   cardInnerContainer: {
     width: '100%',
     flex: 1,
+    overflow: 'hidden', // Clip the scrollable content, but not the buttons
   },
   cardInner: {
     width: '100%',
@@ -274,14 +287,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   buttonContainer: {
+    position: 'absolute',
+    bottom: -28, // Half of button height (56px / 2 = 28px) to create 50% overlap
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.lg,
     gap: SPACING.md,
-    backgroundColor: COLORS.surface,
   },
   button: {
     flex: 1,
