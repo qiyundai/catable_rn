@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
@@ -30,6 +31,7 @@ type OnboardingScreenNavigationProp = StackNavigationProp<RootStackParamList, 'O
 type OnboardingScreenRouteProp = RouteProp<RootStackParamList, 'Onboarding'>;
 
 const OnboardingScreen: React.FC = () => {
+  const { t } = useTranslation();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
   const route = useRoute<OnboardingScreenRouteProp>();
@@ -456,10 +458,10 @@ const OnboardingScreen: React.FC = () => {
   const showHourPicker = () => {
     const hours = Array.from({ length: 12 }, (_, i) => i + 1);
     Alert.alert(
-      'Select Hour',
-      'Choose reminder hour',
+      t('onboarding.selectHour'),
+      t('onboarding.chooseReminderHour'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         ...hours.map(hour => ({
           text: hour.toString(),
           onPress: () => setReminderTime(prev => ({ ...prev, hour }))
@@ -471,10 +473,10 @@ const OnboardingScreen: React.FC = () => {
   const showMinutePicker = () => {
     const minutes = [0, 15, 30, 45];
     Alert.alert(
-      'Select Minutes',
-      'Choose reminder minutes',
+      t('onboarding.selectMinutes'),
+      t('onboarding.chooseReminderMinutes'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         ...minutes.map(minute => ({
           text: minute.toString().padStart(2, '0'),
           onPress: () => setReminderTime(prev => ({ ...prev, minute }))
@@ -633,31 +635,31 @@ const OnboardingScreen: React.FC = () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera roll permissions to select a photo!'
+          t('onboarding.permissionRequired'),
+          t('onboarding.cameraRollPermission')
         );
         return;
       }
 
       // Show action sheet for image source
       Alert.alert(
-        'Select Photo',
-        'Choose how you want to add a photo',
+        t('onboarding.selectPhoto'),
+        t('onboarding.choosePhotoSource'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Camera',
+            text: t('onboarding.camera'),
             onPress: () => openCamera()
           },
           {
-            text: 'Photo Library',
+            text: t('onboarding.photoLibrary'),
             onPress: () => openImageLibrary()
           },
         ]
       );
     } catch (error) {
       console.error('Error requesting permissions:', error);
-      Alert.alert('Error', 'Failed to request permissions');
+      Alert.alert(t('common.error'), t('onboarding.failedToRequestPermissions'));
     }
   };
 
@@ -666,8 +668,8 @@ const OnboardingScreen: React.FC = () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera permissions to take a photo!'
+          t('onboarding.permissionRequired'),
+          t('onboarding.cameraPermission')
         );
         return;
       }
@@ -684,7 +686,7 @@ const OnboardingScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      Alert.alert(t('common.error'), t('onboarding.failedToTakePhoto'));
     }
   };
 
@@ -702,7 +704,7 @@ const OnboardingScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('common.error'), t('onboarding.failedToPickImage'));
     }
   };
 
@@ -739,10 +741,10 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Cat's Name</Text>
+              <Text style={styles.inputLabel}>{t('onboarding.catNameLabel')}</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter your cat's name"
+                placeholder={t('onboarding.enterCatName')}
                 placeholderTextColor={COLORS.textSecondary}
                 value={currentPetForm.name}
                 onChangeText={(text) => updateCurrentPetForm({ name: text })}
@@ -755,7 +757,7 @@ const OnboardingScreen: React.FC = () => {
               ) : (
                 <>
                   <Text style={styles.avatarEmoji}>📷</Text>
-                  <Text style={styles.avatarText}>Add Photo</Text>
+                  <Text style={styles.avatarText}>{t('onboarding.addPhoto')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -780,7 +782,7 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardDescription}>{step.description}</Text>
             <View style={styles.infoColumn}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Age</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.age')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openAgePicker}
@@ -793,7 +795,7 @@ const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Gender</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.gender')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openGenderPicker}
@@ -806,26 +808,26 @@ const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Breed</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.breed')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openBreedPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.breed || 'Select breed'}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.breed || t('onboarding.selectBreed')}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Personality</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.personality')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openPersonalityPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.personality || 'Select personality'}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.personality || t('onboarding.selectPersonality')}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
@@ -845,7 +847,7 @@ const OnboardingScreen: React.FC = () => {
             {!hasAnyCat && (
               <View style={styles.warningContainer}>
                 <Text style={styles.warningText}>
-                  ⚠️ You need to add at least one cat to continue. Please go back and complete your first cat's setup.
+                  ⚠️ {t('onboarding.noCatsWarning')}
                 </Text>
               </View>
             )}
@@ -986,12 +988,12 @@ const OnboardingScreen: React.FC = () => {
         {onboardingComplete ? (
           <View style={styles.completionContainer}>
             <Text style={styles.completionEmoji}>🎉</Text>
-            <Text style={styles.completionTitle}>Welcome to Catable!</Text>
+            <Text style={styles.completionTitle}>{t('onboarding.welcomeToCatable')}</Text>
             <Text style={styles.completionDescription}>
-              You're all set to start tracking your cat's health and activities.
+              {t('onboarding.completionDescription')}
             </Text>
             <Text style={styles.completionSubtext}>
-              You're all set to start tracking! 🐱
+              {t('onboarding.completionSubtext')}
             </Text>
             <TouchableOpacity
               style={styles.getStartedButton}
@@ -1006,7 +1008,7 @@ const OnboardingScreen: React.FC = () => {
                 }
               }}
             >
-              <Text style={styles.getStartedButtonText}>Get Started</Text>
+              <Text style={styles.getStartedButtonText}>{t('onboarding.getStarted')}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -1022,15 +1024,15 @@ const OnboardingScreen: React.FC = () => {
             maxVisibleCards={3}
             primaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
-                ? 'Yes, Add'
+                ? t('onboarding.yesAdd')
                 : currentCardIndex === allSteps.length - 1
-                ? 'Complete'
-                : 'Next'
+                ? t('onboarding.complete')
+                : t('common.next')
             }
             secondaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
-                ? hasAnyCat ? 'No, Continue' : 'Go Back'
-                : 'Skip'
+                ? hasAnyCat ? t('onboarding.noContinue') : t('onboarding.goBack')
+                : t('common.skip')
             }
             onPrimaryAction={(item, index) => {
               if (item.id === 'add_another') {
@@ -1090,11 +1092,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelAgePicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Age</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectAge')}</Text>
               <TouchableOpacity onPress={saveAgePicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
@@ -1102,7 +1104,7 @@ const OnboardingScreen: React.FC = () => {
               <View style={styles.sharedSelectionBar} pointerEvents="none" />
               
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Years</Text>
+                <Text style={styles.wheelLabel}>{t('onboarding.years')}</Text>
                 <WheelPicker
                   items={Array.from({ length: 20 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedYear}
@@ -1112,7 +1114,7 @@ const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Months</Text>
+                <Text style={styles.wheelLabel}>{t('onboarding.months')}</Text>
                 <WheelPicker
                   items={Array.from({ length: 12 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedMonth}
@@ -1140,11 +1142,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelGenderPicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Gender</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectGender')}</Text>
               <TouchableOpacity onPress={saveGenderPicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -1188,11 +1190,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelBreedPicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Breed</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectBreed')}</Text>
               <TouchableOpacity onPress={saveBreedPicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -1236,11 +1238,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelPersonalityPicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Personality</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectPersonality')}</Text>
               <TouchableOpacity onPress={savePersonalityPicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -1280,20 +1282,20 @@ const OnboardingScreen: React.FC = () => {
           <View style={styles.pickerContainer}>
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={closeCustomTaskModal}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Add Custom Task</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.addCustomTask')}</Text>
               <TouchableOpacity onPress={addCustomTask}>
-                <Text style={styles.pickerSaveText}>Add</Text>
+                <Text style={styles.pickerSaveText}>{t('common.add')}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.customTaskContent}>
               <Text style={styles.customTaskLabel}>
-                Add a custom {currentTaskCategory} task to track
+                {t('onboarding.addCustomTaskDescription', { category: currentTaskCategory })}
               </Text>
               <TextInput
                 style={styles.customTaskInput}
-                placeholder="Enter task name..."
+                placeholder={t('onboarding.enterTaskName')}
                 value={customTaskName}
                 onChangeText={setCustomTaskName}
                 autoFocus={true}
