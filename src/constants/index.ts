@@ -1,4 +1,5 @@
 // App constants and configuration
+import { Platform } from 'react-native';
 
 export const APP_CONFIG = {
   name: 'CAT-able',
@@ -30,22 +31,43 @@ export const COLORS = {
 
 export const SHADOWS = {
   small: {
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.black,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   medium: {
-    elevation: 4,
-    shadowColor: COLORS.black,
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   large: {
-    elevation: 8,
-    shadowColor: COLORS.black,
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.black,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
 };
 

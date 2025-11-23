@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   TextInput,
   ScrollView,
   Modal,
@@ -18,11 +18,8 @@ import { UserTask } from '../types';
 import { getTaskById, getTaskByOldId, TaskDefinition, TaskField } from '../constants/tasks';
 import TaskReminderService from '../services/TaskReminderService';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth * 0.75; // 75% of screen width
-const CARD_HEIGHT = screenHeight * 0.5; // 50% of screen height
-
 const TasksScreen: React.FC = () => {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const { 
     currentPet, 
     pets, 
@@ -35,6 +32,10 @@ const TasksScreen: React.FC = () => {
     setTaskFrequency,
     getTaskFrequency,
   } = useAppStore();
+  
+  // Responsive card dimensions
+  const CARD_WIDTH = Math.min(screenWidth * 0.9, 400);
+  const CARD_HEIGHT = Math.min(screenHeight * 0.65, 600);
   const [frequencyModalVisible, setFrequencyModalVisible] = useState(false);
   const [selectedTaskForFrequency, setSelectedTaskForFrequency] = useState<TaskDefinition | null>(null);
   const [selectedNumber, setSelectedNumber] = useState(1);
@@ -902,63 +903,16 @@ const styles = StyleSheet.create({
   cardDeck: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    padding: SPACING.lg,
-    position: 'relative',
-  },
-  leftIndicator: {
-    left: 20,
-    backgroundColor: COLORS.gray,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  rightIndicator: {
-    right: 20,
-    backgroundColor: COLORS.primary,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  leftIndicatorText: {
-    ...TYPOGRAPHY.h3,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: COLORS.text,
-  },
-  card: {
-    position: 'absolute',
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  topCard: {
-    zIndex: 2,
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    width: '100%',
   },
   cardContent: {
-    flex: 1,
     padding: SPACING.xl,
-    paddingBottom: SPACING.lg + 30, // Extra padding for buttons (60px button height + 20px spacing)
+    paddingBottom: SPACING.md,
     alignItems: 'center',
+    width: '100%',
   },
   cardIcon: {
     width: 80,
@@ -1137,7 +1091,8 @@ const styles = StyleSheet.create({
   // New input styles
   inputsScrollView: {
     width: '100%',
-    maxHeight: 300,
+    flex: 1,
+    maxHeight: 400,
   },
   inputsScrollContent: {
     paddingVertical: SPACING.sm,

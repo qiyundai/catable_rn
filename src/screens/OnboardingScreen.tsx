@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   TextInput,
   Alert,
   Image,
@@ -17,7 +17,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
 import { PetForm, RootStackParamList } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
 import TagSelector from '../components/TagSelector';
@@ -25,18 +25,19 @@ import CardDeck from '../components/CardDeck';
 import TaskReminderService from '../services/TaskReminderService';
 import NotificationService from '../services/NotificationService';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth * 0.85; // 85% of screen width
-const CARD_HEIGHT = screenHeight * 0.6; // 60% of screen height
-
 
 type OnboardingScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
 type OnboardingScreenRouteProp = RouteProp<RootStackParamList, 'Onboarding'>;
 
 const OnboardingScreen: React.FC = () => {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
   const route = useRoute<OnboardingScreenRouteProp>();
   const isAddingNewCat = route.params?.addNewCat === true;
+  
+  // Responsive card dimensions
+  const CARD_WIDTH = Math.min(screenWidth * 0.9, 400);
+  const CARD_HEIGHT = Math.min(screenHeight * 0.65, 600);
   
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [petForms, setPetForms] = useState<PetForm[]>([{
@@ -841,6 +842,13 @@ const OnboardingScreen: React.FC = () => {
             </View>
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
+            {!hasAnyCat && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  ⚠️ You need to add at least one cat to continue. Please go back and complete your first cat's setup.
+                </Text>
+              </View>
+            )}
           </View>
         );
 
@@ -966,7 +974,7 @@ const OnboardingScreen: React.FC = () => {
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <ProgressBar
-          current={currentCardIndex + 1}
+          current={Math.min(currentCardIndex + 1, allSteps.length)}
           total={allSteps.length}
           showText={true}
           height={16}
@@ -985,6 +993,22 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.completionSubtext}>
               You're all set to start tracking! 🐱
             </Text>
+            <TouchableOpacity
+              style={styles.getStartedButton}
+              onPress={() => {
+                // Navigation should happen automatically via AppNavigator when isOnboardingComplete is true
+                // But if it doesn't, try to navigate explicitly
+                // The AppNavigator will handle the actual navigation based on isOnboardingComplete state
+                try {
+                  navigation.navigate('Main' as never);
+                } catch (e) {
+                  // If navigation fails, the AppNavigator should handle it automatically
+                  console.log('Navigation will happen automatically');
+                }
+              }}
+            >
+              <Text style={styles.getStartedButtonText}>Get Started</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <CardDeck
@@ -1006,7 +1030,7 @@ const OnboardingScreen: React.FC = () => {
             }
             secondaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
-                ? 'No, Continue'
+                ? hasAnyCat ? 'No, Continue' : 'Go Back'
                 : 'Skip'
             }
             onPrimaryAction={(item, index) => {
@@ -1023,8 +1047,25 @@ const OnboardingScreen: React.FC = () => {
               }
             }}
             onSecondaryAction={(item, index) => {
-              if (item.id === 'add_another') {
-                handleNext();
+              // Check both the passed item and the current step to handle any closure issues
+              const stepId = item?.id || allSteps[currentCardIndex]?.id;
+              if (stepId === 'add_another') {
+                if (hasAnyCat) {
+                  // For "No, Continue" - just move to next step (only if at least one cat exists)
+                  setCurrentCardIndex(prev => {
+                    if (prev < allSteps.length - 1) {
+                      return prev + 1;
+                    }
+                    return prev;
+                  });
+                } else {
+                  // If no cats, go back to the first cat setup
+                  // Find the first cat_name step
+                  const firstCatNameIndex = allSteps.findIndex(step => step.id === 'cat_name');
+                  if (firstCatNameIndex !== -1) {
+                    setCurrentCardIndex(firstCatNameIndex);
+                  }
+                }
               } else {
                 // Default behavior for other steps
                 handleSkip();
@@ -1280,53 +1321,16 @@ const styles = StyleSheet.create({
   cardDeck: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    padding: SPACING.lg,
-    position: 'relative',
-  },
-  leftIndicator: {
-    left: SPACING.lg,
-    backgroundColor: COLORS.error,
-  },
-  rightIndicator: {
-    right: SPACING.lg,
-    backgroundColor: COLORS.primary,
-  },
-  leftIndicatorText: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.surface,
-    fontWeight: 'bold',
-  },
-  rightIndicatorText: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.surface,
-    fontWeight: 'bold',
-  },
-  card: {
-    position: 'absolute',
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  topCard: {
-    shadowOpacity: 0.35,
-    shadowRadius: 5,
-    elevation: 8,
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    width: '100%',
   },
   cardContent: {
     padding: SPACING.xl,
-    paddingBottom: SPACING.xl + 80, // Extra padding for buttons (60px button height + 20px spacing)
+    paddingBottom: SPACING.md,
     alignItems: 'center',
-    minHeight: '100%',
+    width: '100%',
   },
   cardContentScroll: {
     flex: 1,
@@ -1383,6 +1387,36 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  warningContainer: {
+    marginTop: SPACING.lg,
+    padding: SPACING.md,
+    backgroundColor: COLORS.warning + '15',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.warning + '40',
+    width: '100%',
+  },
+  warningText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.warning,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  getStartedButton: {
+    marginTop: SPACING.xl,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    backgroundColor: COLORS.primary,
+    borderRadius: 25,
+    minWidth: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.medium,
+  },
+  getStartedButtonText: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.surface,
   },
   inputContainer: {
     width: '100%',
