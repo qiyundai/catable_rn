@@ -1003,7 +1003,6 @@ const OnboardingScreen: React.FC = () => {
                   navigation.navigate('Main' as never);
                 } catch (e) {
                   // If navigation fails, the AppNavigator should handle it automatically
-                  console.log('Navigation will happen automatically');
                 }
               }}
             >
