@@ -90,7 +90,10 @@ export interface OnboardingStep {
   title: string;
   description: string;
   component: string;
+  type: 'flow_control' | 'data_collection';
+  skipBehavior: string;
   data?: any;
+  catIndex?: number;
 }
 
 // Navigation types

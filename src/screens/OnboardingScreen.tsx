@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
-import { PetForm, RootStackParamList } from '../types';
+import { PetForm, RootStackParamList, OnboardingStep } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
@@ -155,8 +155,8 @@ const OnboardingScreen: React.FC = () => {
   }, [petForms]);
 
   // Generate dynamic steps based on number of cats
-  const allSteps = useMemo(() => {
-    let baseSteps = [...ONBOARDING_STEPS];
+  const allSteps = useMemo((): OnboardingStep[] => {
+    let baseSteps: OnboardingStep[] = [...ONBOARDING_STEPS] as OnboardingStep[];
     
     // If adding a new cat, filter out welcome and add_another steps
     if (isAddingNewCat) {
@@ -174,7 +174,7 @@ const OnboardingScreen: React.FC = () => {
         );
       }
     } else {
-      const dynamicSteps: any[] = [];
+      const dynamicSteps: OnboardingStep[] = [];
 
       // For each cat after the first one, insert cat_name and cat_info steps
       for (let i = 1; i < petForms.length; i++) {
@@ -184,6 +184,8 @@ const OnboardingScreen: React.FC = () => {
             title: `What's your ${i === 1 ? 'second' : `${i + 1}th`} cat's name?`,
             description: `Add a name and photo for your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
             component: 'CatName',
+            type: 'data_collection',
+            skipBehavior: 'next',
             catIndex: i,
           },
           {
@@ -191,6 +193,8 @@ const OnboardingScreen: React.FC = () => {
             title: `Basic Information`,
             description: `Tell us about your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
             component: 'CatInfo',
+            type: 'data_collection',
+            skipBehavior: 'next',
             catIndex: i,
           }
         );
