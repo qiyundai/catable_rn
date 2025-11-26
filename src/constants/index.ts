@@ -30,45 +30,97 @@ export const COLORS = {
 };
 
 export const SHADOWS = {
-  small: {
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.black,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  medium: {
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.black,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  large: {
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.black,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
+  small: Platform.select({
+    ios: {
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    android: {
+      elevation: 2,
+    },
+    web: {
+      boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.12), 0px 1px 2px rgba(0, 0, 0, 0.24)',
+    },
+    default: {
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+  }) as any,
+  medium: Platform.select({
+    ios: {
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+    android: {
+      elevation: 4,
+    },
+    web: {
+      boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.12)',
+    },
+    default: {
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+    },
+  }) as any,
+  large: Platform.select({
+    ios: {
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
+    android: {
+      elevation: 8,
+    },
+    web: {
+      boxShadow: '0px 10px 20px rgba(0, 0, 0, 0.15), 0px 3px 6px rgba(0, 0, 0, 0.10)',
+    },
+    default: {
+      shadowColor: COLORS.black,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+    },
+  }) as any,
+};
+
+// Helper function to create cross-platform shadow styles
+export const createShadow = (
+  color: string = COLORS.black,
+  offsetX: number = 0,
+  offsetY: number = 2,
+  opacity: number = 0.25,
+  radius: number = 4,
+  elevation: number = 4
+) => {
+  return Platform.select({
+    ios: {
+      shadowColor: color,
+      shadowOffset: { width: offsetX, height: offsetY },
+      shadowOpacity: opacity,
+      shadowRadius: radius,
+    },
+    android: {
+      elevation: elevation,
+    },
+    web: {
+      boxShadow: `${offsetX}px ${offsetY}px ${radius * 2}px rgba(0, 0, 0, ${opacity})`,
+    },
+    default: {
+      shadowColor: color,
+      shadowOffset: { width: offsetX, height: offsetY },
+      shadowOpacity: opacity,
+      shadowRadius: radius,
+    },
+  }) as any;
 };
 
 export const BORDER_RADIUS = {

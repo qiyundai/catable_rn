@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { LoginForm, RegisterForm } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, SOCIAL_LOGIN_PROVIDERS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SOCIAL_LOGIN_PROVIDERS, SHADOWS } from '../constants';
 import { Logo } from '../components/Logo';
 
 const AuthScreen: React.FC = () => {
@@ -424,14 +424,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
   },
   backButtonIcon: {
     fontSize: 24,

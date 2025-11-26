@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
 
 interface ProgressBarProps {
@@ -50,14 +50,21 @@ const styles = StyleSheet.create({
   progressBar: {
     backgroundColor: COLORS.border,
     borderRadius: 8,
-    shadowColor: COLORS.progress,
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 6,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.progress,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: `0px 0px 12px ${COLORS.progress}99`,
+      },
+    }),
   },
   progressFill: {
     height: '100%',

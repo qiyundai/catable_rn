@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
 
 interface Task {
   id: string;
@@ -143,14 +143,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginRight: SPACING.sm,
     marginBottom: SPACING.sm,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
   },
   taskIcon: {
     fontSize: 14,

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
-import { COLORS, TYPOGRAPHY, SPACING, REGION_OPTIONS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, REGION_OPTIONS, SHADOWS, createShadow } from '../constants';
 import WheelPicker from '../components/WheelPicker';
 import NotificationService from '../services/NotificationService';
 import { changeLanguage } from '../utils/i18n';
@@ -613,14 +613,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: SPACING.lg,
     marginBottom: SPACING.xl,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.medium,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -707,14 +702,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 'auto',
     marginBottom: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    ...SHADOWS.medium,
   },
   signOutText: {
     ...TYPOGRAPHY.bodyMedium,
@@ -733,14 +721,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '90%',
     maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.large,
   },
   pickerHeader: {
     flexDirection: 'row',
@@ -830,14 +813,9 @@ const styles = StyleSheet.create({
     marginTop: 8, // Adjust for label height (20px caption + 8px margin)
     backgroundColor: COLORS.gray,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.small,
     zIndex: -1, // Behind the text
   },
 });

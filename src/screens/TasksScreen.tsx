@@ -10,7 +10,7 @@ import {
   Modal,
 } from 'react-native';
 import { useAppStore } from '../store';
-import { COLORS, TYPOGRAPHY, SPACING } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import CardDeck from '../components/CardDeck';
 import WheelPicker from '../components/WheelPicker';
@@ -1474,15 +1474,10 @@ const styles = StyleSheet.create({
     marginTop: -20, // No labels in this picker, so center it properly
     backgroundColor: COLORS.gray,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     zIndex: 0, // Same level, but behind due to render order
+    ...SHADOWS.small,
   },
 });
 

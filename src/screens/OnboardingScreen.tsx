@@ -1657,15 +1657,10 @@ const styles = StyleSheet.create({
     marginTop: 8, // Adjust for label height (20px caption + 8px margin)
     backgroundColor: COLORS.gray,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     zIndex: 0, // Changed to positive to test if it shows up
+    ...SHADOWS.small,
   },
   // Add Another Cat Button Styles
   buttonContainer: {
