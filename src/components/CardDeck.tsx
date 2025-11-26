@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants';
 
@@ -132,16 +133,23 @@ const CardDeck: React.FC<CardDeckProps> = ({
             },
           ]}
         >
-          {/* Outer container for shadow - no overflow to allow shadow to render */}
-          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, maxHeight: effectiveCardHeight }]}>
+          {/* Outer container for shadow - fixed height for consistency */}
+          <View style={[
+            styles.cardShadowContainer, 
+            { 
+              width: effectiveCardWidth, 
+              height: effectiveCardHeight,
+            }
+          ]}>
             {/* Inner container for content clipping */}
-            <View style={styles.cardContentContainer}>
-              <View style={styles.cardInnerContainer}>
+            <View style={[styles.cardContentContainer, { height: effectiveCardHeight }]}>
+              <View style={[styles.cardInnerContainer, { height: effectiveCardHeight }]}>
                 <ScrollView 
-                  style={styles.cardInner}
+                  style={[styles.cardInner, { height: effectiveCardHeight }]}
                   contentContainerStyle={styles.cardInnerContent}
-                  showsVerticalScrollIndicator={false}
+                  showsVerticalScrollIndicator={true}
                   scrollEnabled={true}
+                  nestedScrollEnabled={true}
                 >
                   {renderCard(item, index, relativeIndex, true)}
                 </ScrollView>
@@ -177,6 +185,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
       );
     } else {
       // Background cards - absolute positioning to peek behind top card
+      // Use same height as top card for consistency
       return (
         <View
           key={item.id || index}
@@ -190,13 +199,19 @@ const CardDeck: React.FC<CardDeckProps> = ({
             },
           ]}
         >
-          {/* Outer container for shadow - no overflow to allow shadow to render */}
-          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, maxHeight: effectiveCardHeight - peekHeight * relativeIndex }]}>
+          {/* Outer container for shadow - same fixed height as top card */}
+          <View style={[
+            styles.cardShadowContainer, 
+            { 
+              width: effectiveCardWidth, 
+              height: effectiveCardHeight,
+            }
+          ]}>
             {/* Inner container for content clipping */}
-            <View style={styles.cardContentContainer}>
-              <View style={styles.cardInnerContainer}>
+            <View style={[styles.cardContentContainer, { height: effectiveCardHeight }]}>
+              <View style={[styles.cardInnerContainer, { height: effectiveCardHeight }]}>
                 <ScrollView 
-                  style={styles.cardInner}
+                  style={[styles.cardInner, { height: effectiveCardHeight }]}
                   contentContainerStyle={styles.cardInnerContent}
                   showsVerticalScrollIndicator={false}
                   scrollEnabled={false}
@@ -265,26 +280,46 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: COLORS.surface,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
     ...SHADOWS.medium,
   },
   cardContentContainer: {
     width: '100%',
-    height: '100%',
     borderRadius: 20,
     flexDirection: 'column',
     position: 'relative', // Needed for absolute positioned buttons
+    overflow: 'hidden',
   },
   cardInnerContainer: {
     width: '100%',
-    flex: 1,
-    overflow: 'hidden', // Clip the scrollable content, but not the buttons
+    borderRadius: 20,
+    overflow: 'hidden', // Clip the scrollable content
+    ...Platform.select({
+      web: {
+        // Ensure overflow is properly handled on web
+        overflowY: 'auto',
+        overflowX: 'hidden',
+      },
+      default: {},
+    }),
   },
   cardInner: {
     width: '100%',
-    flex: 1,
+    ...Platform.select({
+      web: {
+        // Ensure ScrollView works on web
+        overflowY: 'auto',
+        overflowX: 'hidden',
+      },
+      default: {
+        flex: 1,
+      },
+    }),
   },
   cardInnerContent: {
     flexGrow: 1,
+    paddingBottom: SPACING.xl, // Add padding at bottom to prevent content from being hidden behind buttons
   },
   buttonContainer: {
     position: 'absolute',
