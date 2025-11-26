@@ -3,16 +3,21 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, TextInput, Scro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { COLORS, TYPOGRAPHY, SPACING, REGION_OPTIONS } from '../constants';
 import WheelPicker from '../components/WheelPicker';
 import NotificationService from '../services/NotificationService';
+import { changeLanguage } from '../utils/i18n';
 
 const ProfileScreen: React.FC = () => {
+  const { t } = useTranslation();
   const { user, setUser, signOut, userTasks, setUserTasks, taskReminderState, pets } = useAppStore();
   const [userPhoto, setUserPhoto] = useState<string | null>(user?.avatar || null);
   const [isEditing, setIsEditing] = useState(false);
   const [showRegionPicker, setShowRegionPicker] = useState(false);
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'zh' | 'ja'>(user?.language || 'en');
   const [editedUser, setEditedUser] = useState({
     userName: user?.userName || '',
     email: user?.email || '',
@@ -40,10 +45,10 @@ const ProfileScreen: React.FC = () => {
     { label: '45', value: 45 }
   ];
 
-  const periodOptions = [
-    { label: 'AM', value: 0 },
-    { label: 'PM', value: 1 }
-  ];
+  const periodOptions = React.useMemo(() => [
+    { label: t('common.am'), value: 0 },
+    { label: t('common.pm'), value: 1 }
+  ], [t]);
 
   // Update photo when user changes
   React.useEffect(() => {
@@ -54,6 +59,7 @@ const ProfileScreen: React.FC = () => {
         email: user.email || '',
         region: user.region || '',
       });
+      setSelectedLanguage(user.language || 'en');
     }
   }, [user]);
 
@@ -63,8 +69,8 @@ const ProfileScreen: React.FC = () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera roll permissions to select a photo!'
+          t('profile.permissionRequired'),
+          t('profile.cameraRollPermission')
         );
         return;
       }
@@ -91,25 +97,25 @@ const ProfileScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('common.error'), t('profile.pickImageFailed'));
     }
   };
 
   const handleSave = () => {
     if (!editedUser.userName.trim()) {
-      Alert.alert('Error', 'Username cannot be empty');
+      Alert.alert(t('common.error'), t('profile.usernameEmpty'));
       return;
     }
 
     if (!editedUser.email.trim()) {
-      Alert.alert('Error', 'Email cannot be empty');
+      Alert.alert(t('common.error'), t('profile.emailEmpty'));
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(editedUser.email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('common.error'), t('profile.invalidEmail'));
       return;
     }
 
@@ -122,7 +128,7 @@ const ProfileScreen: React.FC = () => {
         updatedAt: new Date(),
       });
       setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert(t('common.success'), t('profile.profileUpdated'));
     }
   };
 
@@ -142,17 +148,43 @@ const ProfileScreen: React.FC = () => {
     setShowRegionPicker(false);
   };
 
+  const handleLanguageSelect = (language: 'en' | 'zh' | 'ja') => {
+    setSelectedLanguage(language);
+    setShowLanguagePicker(false);
+    
+    // Update user language preference
+    if (user) {
+      setUser({
+        ...user,
+        language,
+        updatedAt: new Date(),
+      });
+      // Update i18n language immediately
+      changeLanguage(language);
+      Alert.alert(t('common.success'), t('profile.languageUpdated'));
+    }
+  };
+
+  const getLanguageLabel = (code: 'en' | 'zh' | 'ja') => {
+    const labels = {
+      en: t('profile.english'),
+      zh: t('profile.chinese'),
+      ja: t('profile.japanese'),
+    };
+    return labels[code];
+  };
+
   const handleSignOut = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      t('profile.signOutTitle'),
+      t('profile.signOutConfirm'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Sign Out',
+          text: t('profile.signOut'),
           style: 'destructive',
           onPress: () => {
             signOut();
@@ -178,7 +210,7 @@ const ProfileScreen: React.FC = () => {
 
   const saveReminderTimePicker = async () => {
     if (!userTasks) {
-      Alert.alert('Error', 'No tasks configured yet');
+      Alert.alert(t('common.error'), t('profile.noTasksConfigured'));
       setShowReminderTimePicker(false);
       return;
     }
@@ -203,15 +235,15 @@ const ProfileScreen: React.FC = () => {
       );
 
       setShowReminderTimePicker(false);
-      Alert.alert('Success', 'Reminder time updated successfully');
+      Alert.alert(t('common.success'), t('profile.reminderTimeUpdated'));
     } catch (error) {
       console.error('Error updating reminder time:', error);
-      Alert.alert('Error', 'Failed to update reminder time');
+      Alert.alert(t('common.error'), t('profile.reminderTimeUpdateFailed'));
     }
   };
 
   const formatReminderTime = () => {
-    if (!userTasks?.reminderTime) return 'Not set';
+    if (!userTasks?.reminderTime) return t('common.notSet');
     const { hour, minute, period } = userTasks.reminderTime;
     return `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
   };
@@ -228,13 +260,13 @@ const ProfileScreen: React.FC = () => {
               <Ionicons name="person-circle" size={80} color={COLORS.primary} />
             )}
           </TouchableOpacity>
-          <Text style={styles.title}>Profile</Text>
+          <Text style={styles.title}>{t('profile.title')}</Text>
         </View>
 
         {/* User Information */}
         <View style={styles.infoSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>User Information</Text>
+            <Text style={styles.sectionTitle}>{t('profile.userInformation')}</Text>
             {!isEditing ? (
               <TouchableOpacity onPress={() => setIsEditing(true)}>
                 <Ionicons name="pencil" size={24} color={COLORS.primary} />
@@ -254,18 +286,18 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.infoItem}>
             <Ionicons name="person-outline" size={24} color={COLORS.textSecondary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Username</Text>
+              <Text style={styles.infoLabel}>{t('profile.userName')}</Text>
               {isEditing ? (
                 <TextInput
                   style={styles.input}
                   value={editedUser.userName}
                   onChangeText={(text) => setEditedUser({ ...editedUser, userName: text })}
-                  placeholder="Enter username"
+                  placeholder={t('profile.enterUsername')}
                   placeholderTextColor={COLORS.textSecondary}
                 />
               ) : (
                 <Text style={styles.infoValue}>
-                  {user?.userName || 'Not set'}
+                  {user?.userName || t('common.notSet')}
                 </Text>
               )}
             </View>
@@ -274,20 +306,20 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.infoItem}>
             <Ionicons name="mail-outline" size={24} color={COLORS.textSecondary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoLabel}>{t('profile.email')}</Text>
               {isEditing ? (
                 <TextInput
                   style={styles.input}
                   value={editedUser.email}
                   onChangeText={(text) => setEditedUser({ ...editedUser, email: text })}
-                  placeholder="Enter email"
+                  placeholder={t('profile.enterEmail')}
                   placeholderTextColor={COLORS.textSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
               ) : (
                 <Text style={styles.infoValue}>
-                  {user?.email || 'Not set'}
+                  {user?.email || t('common.notSet')}
                 </Text>
               )}
             </View>
@@ -296,7 +328,7 @@ const ProfileScreen: React.FC = () => {
           <View style={[styles.infoItem, styles.lastInfoItem]}>
             <Ionicons name="location-outline" size={24} color={COLORS.textSecondary} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Region</Text>
+              <Text style={styles.infoLabel}>{t('profile.region')}</Text>
               {isEditing ? (
                 <TouchableOpacity
                   style={styles.regionButton}
@@ -306,24 +338,46 @@ const ProfileScreen: React.FC = () => {
                     styles.regionButtonText,
                     !editedUser.region && styles.regionButtonTextPlaceholder
                   ]}>
-                    {editedUser.region || 'Select region'}
+                    {editedUser.region || t('common.selectRegion')}
                   </Text>
                   <Ionicons name="chevron-down" size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
               ) : (
                 <Text style={styles.infoValue}>
-                  {user?.region || 'Not set'}
+                  {user?.region || t('common.notSet')}
                 </Text>
               )}
             </View>
           </View>
         </View>
 
+        {/* Language Settings - Standalone Section */}
+        <View style={styles.infoSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('profile.language')}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.infoItem, styles.lastInfoItem]}
+            onPress={() => setShowLanguagePicker(true)}
+          >
+            <Ionicons name="language-outline" size={24} color={COLORS.textSecondary} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>{t('profile.appLanguage')}</Text>
+              <View style={styles.reminderTimeRow}>
+                <Text style={styles.infoValue}>
+                  {getLanguageLabel(user?.language || 'en')}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Notifications & Reminders Section */}
         {userTasks && (
           <View style={styles.infoSection}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Notifications & Reminders</Text>
+              <Text style={styles.sectionTitle}>{t('profile.notificationsReminders')}</Text>
             </View>
 
             <TouchableOpacity
@@ -332,7 +386,7 @@ const ProfileScreen: React.FC = () => {
             >
               <Ionicons name="alarm-outline" size={24} color={COLORS.textSecondary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Daily Reminder Time</Text>
+                <Text style={styles.infoLabel}>{t('profile.dailyReminderTime')}</Text>
                 <View style={styles.reminderTimeRow}>
                   <Text style={styles.infoValue}>{formatReminderTime()}</Text>
                   <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
@@ -343,9 +397,9 @@ const ProfileScreen: React.FC = () => {
             <View style={[styles.infoItem, styles.lastInfoItem]}>
               <Ionicons name="information-circle-outline" size={24} color={COLORS.textSecondary} />
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Note</Text>
+                <Text style={styles.infoLabel}>{t('profile.note')}</Text>
                 <Text style={styles.infoNote}>
-                  You'll receive one daily reminder at this time to complete your tasks
+                  {t('profile.reminderNote')}
                 </Text>
               </View>
             </View>
@@ -355,7 +409,7 @@ const ProfileScreen: React.FC = () => {
         {/* Sign Out Button */}
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <Text style={styles.signOutText}>{t('profile.signOut')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -370,11 +424,11 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.pickerContainer}>
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={() => setShowRegionPicker(false)}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Region</Text>
+              <Text style={styles.pickerTitle}>{t('profile.selectRegion')}</Text>
               <TouchableOpacity onPress={() => setShowRegionPicker(false)}>
-                <Text style={styles.pickerSaveText}>Done</Text>
+                <Text style={styles.pickerSaveText}>{t('common.done')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -403,6 +457,50 @@ const ProfileScreen: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Language Picker Modal */}
+      <Modal
+        visible={showLanguagePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowLanguagePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <TouchableOpacity onPress={() => setShowLanguagePicker(false)}>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <Text style={styles.pickerTitle}>{t('profile.selectLanguage')}</Text>
+              <TouchableOpacity onPress={() => setShowLanguagePicker(false)}>
+                <Text style={styles.pickerSaveText}>{t('common.done')}</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
+              {(['en', 'zh', 'ja'] as const).map(language => (
+                <TouchableOpacity
+                  key={language}
+                  style={[
+                    styles.optionItem,
+                    selectedLanguage === language && styles.optionItemSelected
+                  ]}
+                  onPress={() => handleLanguageSelect(language)}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    selectedLanguage === language && styles.optionTextSelected
+                  ]}>
+                    {getLanguageLabel(language)}
+                  </Text>
+                  {selectedLanguage === language && (
+                    <Text style={styles.checkmark}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Reminder Time Picker Modal */}
       <Modal
         visible={showReminderTimePicker}
@@ -414,11 +512,11 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.pickerContainer}>
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelReminderTimePicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Set Reminder Time</Text>
+              <Text style={styles.pickerTitle}>{t('profile.setReminderTime')}</Text>
               <TouchableOpacity onPress={saveReminderTimePicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
@@ -426,7 +524,7 @@ const ProfileScreen: React.FC = () => {
               <View style={styles.sharedSelectionBar} pointerEvents="none" />
 
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Hour</Text>
+                <Text style={styles.wheelLabel}>{t('common.hour')}</Text>
                 <WheelPicker
                   items={hourOptions}
                   selectedIndex={hourOptions.findIndex(opt => opt.value === tempReminderTime.hour)}
@@ -439,7 +537,7 @@ const ProfileScreen: React.FC = () => {
               </View>
 
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Minute</Text>
+                <Text style={styles.wheelLabel}>{t('common.minute')}</Text>
                 <WheelPicker
                   items={minuteOptions}
                   selectedIndex={minuteOptions.findIndex(opt => opt.value === tempReminderTime.minute)}
@@ -452,7 +550,7 @@ const ProfileScreen: React.FC = () => {
               </View>
 
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Period</Text>
+                <Text style={styles.wheelLabel}>{t('common.period')}</Text>
                 <WheelPicker
                   items={periodOptions}
                   selectedIndex={tempReminderTime.period === 'AM' ? 0 : 1}

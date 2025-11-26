@@ -1,4 +1,4 @@
-import React, { useState, createContext, useContext, useRef } from 'react';
+import React, { useState, createContext, useContext, useRef, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,6 +7,7 @@ import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
 import { RootStackParamList, MainTabParamList } from '../types';
+import { initializeLanguage } from '../utils/i18n';
 
 // Create context for active screen
 const ActiveScreenContext = createContext<{
@@ -209,7 +210,14 @@ const MainTabNavigator = () => {
 };
 
 const AppNavigator = () => {
-  const { isAuthenticated, isOnboardingComplete } = useAppStore();
+  const { isAuthenticated, isOnboardingComplete, user } = useAppStore();
+  
+  // Initialize language from user preference on app start
+  useEffect(() => {
+    if (user?.language) {
+      initializeLanguage(user.language);
+    }
+  }, []); // Only run on mount
 
   return (
     <NavigationContainer>

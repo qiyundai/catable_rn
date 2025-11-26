@@ -28,7 +28,13 @@ Welcome to the CAT-able documentation! This folder contains comprehensive, bite-
 ### Data & Configuration
 - **[12-types-data-models.md](./12-types-data-models.md)** - TypeScript types and data structures
 - **[13-constants-config.md](./13-constants-config.md)** - Constants, configuration, and design tokens
+- **[13-pdf-export.md](./13-pdf-export.md)** - PDF report generation and export
+- **[14-dynamic-pet-age.md](./14-dynamic-pet-age.md)** - Dynamic pet age calculation
 - **[14-i18n.md](./14-i18n.md)** - Internationalization setup and usage
+
+### Development & Deployment
+- **[15-expo-tunnel-setup.md](./15-expo-tunnel-setup.md)** - Setting up Expo tunnel for remote testing
+- **[15-cloud-hosting.md](./15-cloud-hosting.md)** - Cloud hosting options and deployment guide
 
 ## 🚀 Quick Links
 

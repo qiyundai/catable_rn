@@ -4,7 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   TextInput,
   Alert,
   Image,
@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
 import { PetForm, RootStackParamList } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
 import TagSelector from '../components/TagSelector';
@@ -25,18 +26,20 @@ import CardDeck from '../components/CardDeck';
 import TaskReminderService from '../services/TaskReminderService';
 import NotificationService from '../services/NotificationService';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth * 0.85; // 85% of screen width
-const CARD_HEIGHT = screenHeight * 0.6; // 60% of screen height
-
 
 type OnboardingScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Onboarding'>;
 type OnboardingScreenRouteProp = RouteProp<RootStackParamList, 'Onboarding'>;
 
 const OnboardingScreen: React.FC = () => {
+  const { t } = useTranslation();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const navigation = useNavigation<OnboardingScreenNavigationProp>();
   const route = useRoute<OnboardingScreenRouteProp>();
   const isAddingNewCat = route.params?.addNewCat === true;
+  
+  // Responsive card dimensions
+  const CARD_WIDTH = Math.min(screenWidth * 0.9, 400);
+  const CARD_HEIGHT = Math.min(screenHeight * 0.65, 600);
   
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [petForms, setPetForms] = useState<PetForm[]>([{
@@ -455,10 +458,10 @@ const OnboardingScreen: React.FC = () => {
   const showHourPicker = () => {
     const hours = Array.from({ length: 12 }, (_, i) => i + 1);
     Alert.alert(
-      'Select Hour',
-      'Choose reminder hour',
+      t('onboarding.selectHour'),
+      t('onboarding.chooseReminderHour'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         ...hours.map(hour => ({
           text: hour.toString(),
           onPress: () => setReminderTime(prev => ({ ...prev, hour }))
@@ -470,10 +473,10 @@ const OnboardingScreen: React.FC = () => {
   const showMinutePicker = () => {
     const minutes = [0, 15, 30, 45];
     Alert.alert(
-      'Select Minutes',
-      'Choose reminder minutes',
+      t('onboarding.selectMinutes'),
+      t('onboarding.chooseReminderMinutes'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         ...minutes.map(minute => ({
           text: minute.toString().padStart(2, '0'),
           onPress: () => setReminderTime(prev => ({ ...prev, minute }))
@@ -632,31 +635,31 @@ const OnboardingScreen: React.FC = () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera roll permissions to select a photo!'
+          t('onboarding.permissionRequired'),
+          t('onboarding.cameraRollPermission')
         );
         return;
       }
 
       // Show action sheet for image source
       Alert.alert(
-        'Select Photo',
-        'Choose how you want to add a photo',
+        t('onboarding.selectPhoto'),
+        t('onboarding.choosePhotoSource'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Camera',
+            text: t('onboarding.camera'),
             onPress: () => openCamera()
           },
           {
-            text: 'Photo Library',
+            text: t('onboarding.photoLibrary'),
             onPress: () => openImageLibrary()
           },
         ]
       );
     } catch (error) {
       console.error('Error requesting permissions:', error);
-      Alert.alert('Error', 'Failed to request permissions');
+      Alert.alert(t('common.error'), t('onboarding.failedToRequestPermissions'));
     }
   };
 
@@ -665,8 +668,8 @@ const OnboardingScreen: React.FC = () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera permissions to take a photo!'
+          t('onboarding.permissionRequired'),
+          t('onboarding.cameraPermission')
         );
         return;
       }
@@ -683,7 +686,7 @@ const OnboardingScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      Alert.alert(t('common.error'), t('onboarding.failedToTakePhoto'));
     }
   };
 
@@ -701,7 +704,7 @@ const OnboardingScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image');
+      Alert.alert(t('common.error'), t('onboarding.failedToPickImage'));
     }
   };
 
@@ -738,10 +741,10 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Cat's Name</Text>
+              <Text style={styles.inputLabel}>{t('onboarding.catNameLabel')}</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="Enter your cat's name"
+                placeholder={t('onboarding.enterCatName')}
                 placeholderTextColor={COLORS.textSecondary}
                 value={currentPetForm.name}
                 onChangeText={(text) => updateCurrentPetForm({ name: text })}
@@ -754,7 +757,7 @@ const OnboardingScreen: React.FC = () => {
               ) : (
                 <>
                   <Text style={styles.avatarEmoji}>📷</Text>
-                  <Text style={styles.avatarText}>Add Photo</Text>
+                  <Text style={styles.avatarText}>{t('onboarding.addPhoto')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -779,7 +782,7 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardDescription}>{step.description}</Text>
             <View style={styles.infoColumn}>
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Age</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.age')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openAgePicker}
@@ -792,7 +795,7 @@ const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Gender</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.gender')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openGenderPicker}
@@ -805,26 +808,26 @@ const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Breed</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.breed')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openBreedPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.breed || 'Select breed'}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.breed || t('onboarding.selectBreed')}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Personality</Text>
+                <Text style={styles.inputLabel}>{t('onboarding.personality')}</Text>
                 <TouchableOpacity
                   style={styles.inputField}
                   onPress={openPersonalityPicker}
                 >
                   <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.personality || 'Select personality'}</Text>
+                    <Text style={styles.inputValue}>{currentPetForm.personality || t('onboarding.selectPersonality')}</Text>
                     <Text style={styles.inputIcon}>⌄</Text>
                   </View>
                 </TouchableOpacity>
@@ -841,6 +844,13 @@ const OnboardingScreen: React.FC = () => {
             </View>
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
+            {!hasAnyCat && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  ⚠️ {t('onboarding.noCatsWarning')}
+                </Text>
+              </View>
+            )}
           </View>
         );
 
@@ -966,7 +976,7 @@ const OnboardingScreen: React.FC = () => {
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <ProgressBar
-          current={currentCardIndex + 1}
+          current={Math.min(currentCardIndex + 1, allSteps.length)}
           total={allSteps.length}
           showText={true}
           height={16}
@@ -978,13 +988,28 @@ const OnboardingScreen: React.FC = () => {
         {onboardingComplete ? (
           <View style={styles.completionContainer}>
             <Text style={styles.completionEmoji}>🎉</Text>
-            <Text style={styles.completionTitle}>Welcome to Catable!</Text>
+            <Text style={styles.completionTitle}>{t('onboarding.welcomeToCatable')}</Text>
             <Text style={styles.completionDescription}>
-              You're all set to start tracking your cat's health and activities.
+              {t('onboarding.completionDescription')}
             </Text>
             <Text style={styles.completionSubtext}>
-              You're all set to start tracking! 🐱
+              {t('onboarding.completionSubtext')}
             </Text>
+            <TouchableOpacity
+              style={styles.getStartedButton}
+              onPress={() => {
+                // Navigation should happen automatically via AppNavigator when isOnboardingComplete is true
+                // But if it doesn't, try to navigate explicitly
+                // The AppNavigator will handle the actual navigation based on isOnboardingComplete state
+                try {
+                  navigation.navigate('Main' as never);
+                } catch (e) {
+                  // If navigation fails, the AppNavigator should handle it automatically
+                }
+              }}
+            >
+              <Text style={styles.getStartedButtonText}>{t('onboarding.getStarted')}</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <CardDeck
@@ -999,15 +1024,15 @@ const OnboardingScreen: React.FC = () => {
             maxVisibleCards={3}
             primaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
-                ? 'Yes, Add'
+                ? t('onboarding.yesAdd')
                 : currentCardIndex === allSteps.length - 1
-                ? 'Complete'
-                : 'Next'
+                ? t('onboarding.complete')
+                : t('common.next')
             }
             secondaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
-                ? 'No, Continue'
-                : 'Skip'
+                ? hasAnyCat ? t('onboarding.noContinue') : t('onboarding.goBack')
+                : t('common.skip')
             }
             onPrimaryAction={(item, index) => {
               if (item.id === 'add_another') {
@@ -1023,8 +1048,25 @@ const OnboardingScreen: React.FC = () => {
               }
             }}
             onSecondaryAction={(item, index) => {
-              if (item.id === 'add_another') {
-                handleNext();
+              // Check both the passed item and the current step to handle any closure issues
+              const stepId = item?.id || allSteps[currentCardIndex]?.id;
+              if (stepId === 'add_another') {
+                if (hasAnyCat) {
+                  // For "No, Continue" - just move to next step (only if at least one cat exists)
+                  setCurrentCardIndex(prev => {
+                    if (prev < allSteps.length - 1) {
+                      return prev + 1;
+                    }
+                    return prev;
+                  });
+                } else {
+                  // If no cats, go back to the first cat setup
+                  // Find the first cat_name step
+                  const firstCatNameIndex = allSteps.findIndex(step => step.id === 'cat_name');
+                  if (firstCatNameIndex !== -1) {
+                    setCurrentCardIndex(firstCatNameIndex);
+                  }
+                }
               } else {
                 // Default behavior for other steps
                 handleSkip();
@@ -1050,11 +1092,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelAgePicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Age</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectAge')}</Text>
               <TouchableOpacity onPress={saveAgePicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.wheelContainer}>
@@ -1062,7 +1104,7 @@ const OnboardingScreen: React.FC = () => {
               <View style={styles.sharedSelectionBar} pointerEvents="none" />
               
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Years</Text>
+                <Text style={styles.wheelLabel}>{t('onboarding.years')}</Text>
                 <WheelPicker
                   items={Array.from({ length: 20 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedYear}
@@ -1072,7 +1114,7 @@ const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.wheelColumn}>
-                <Text style={styles.wheelLabel}>Months</Text>
+                <Text style={styles.wheelLabel}>{t('onboarding.months')}</Text>
                 <WheelPicker
                   items={Array.from({ length: 12 }, (_, i) => ({ label: i.toString(), value: i }))}
                   selectedIndex={tempSelectedMonth}
@@ -1100,11 +1142,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelGenderPicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Gender</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectGender')}</Text>
               <TouchableOpacity onPress={saveGenderPicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -1148,11 +1190,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelBreedPicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Breed</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectBreed')}</Text>
               <TouchableOpacity onPress={saveBreedPicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -1196,11 +1238,11 @@ const OnboardingScreen: React.FC = () => {
           >
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={cancelPersonalityPicker}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Select Personality</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.selectPersonality')}</Text>
               <TouchableOpacity onPress={savePersonalityPicker}>
-                <Text style={styles.pickerSaveText}>Save</Text>
+                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
@@ -1240,20 +1282,20 @@ const OnboardingScreen: React.FC = () => {
           <View style={styles.pickerContainer}>
             <View style={styles.pickerHeader}>
               <TouchableOpacity onPress={closeCustomTaskModal}>
-                <Text style={styles.pickerCancelText}>Cancel</Text>
+                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
-              <Text style={styles.pickerTitle}>Add Custom Task</Text>
+              <Text style={styles.pickerTitle}>{t('onboarding.addCustomTask')}</Text>
               <TouchableOpacity onPress={addCustomTask}>
-                <Text style={styles.pickerSaveText}>Add</Text>
+                <Text style={styles.pickerSaveText}>{t('common.add')}</Text>
               </TouchableOpacity>
             </View>
             <View style={styles.customTaskContent}>
               <Text style={styles.customTaskLabel}>
-                Add a custom {currentTaskCategory} task to track
+                {t('onboarding.addCustomTaskDescription', { category: currentTaskCategory })}
               </Text>
               <TextInput
                 style={styles.customTaskInput}
-                placeholder="Enter task name..."
+                placeholder={t('onboarding.enterTaskName')}
                 value={customTaskName}
                 onChangeText={setCustomTaskName}
                 autoFocus={true}
@@ -1280,53 +1322,16 @@ const styles = StyleSheet.create({
   cardDeck: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    padding: SPACING.lg,
-    position: 'relative',
-  },
-  leftIndicator: {
-    left: SPACING.lg,
-    backgroundColor: COLORS.error,
-  },
-  rightIndicator: {
-    right: SPACING.lg,
-    backgroundColor: COLORS.primary,
-  },
-  leftIndicatorText: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.surface,
-    fontWeight: 'bold',
-  },
-  rightIndicatorText: {
-    ...TYPOGRAPHY.h3,
-    color: COLORS.surface,
-    fontWeight: 'bold',
-  },
-  card: {
-    position: 'absolute',
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  topCard: {
-    shadowOpacity: 0.35,
-    shadowRadius: 5,
-    elevation: 8,
+    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    width: '100%',
   },
   cardContent: {
     padding: SPACING.xl,
-    paddingBottom: SPACING.xl + 80, // Extra padding for buttons (60px button height + 20px spacing)
+    paddingBottom: SPACING.md,
     alignItems: 'center',
-    minHeight: '100%',
+    width: '100%',
   },
   cardContentScroll: {
     flex: 1,
@@ -1383,6 +1388,36 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  warningContainer: {
+    marginTop: SPACING.lg,
+    padding: SPACING.md,
+    backgroundColor: COLORS.warning + '15',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.warning + '40',
+    width: '100%',
+  },
+  warningText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.warning,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  getStartedButton: {
+    marginTop: SPACING.xl,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    backgroundColor: COLORS.primary,
+    borderRadius: 25,
+    minWidth: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...SHADOWS.medium,
+  },
+  getStartedButtonText: {
+    ...TYPOGRAPHY.bodyBold,
+    color: COLORS.surface,
   },
   inputContainer: {
     width: '100%',

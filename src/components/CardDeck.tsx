@@ -1,15 +1,13 @@
 import React from 'react';
 import {
   View,
-  Animated,
-  Dimensions,
+  ScrollView,
+  useWindowDimensions,
   TouchableOpacity,
   Text,
   StyleSheet,
 } from 'react-native';
 import { COLORS, SPACING, SHADOWS, TYPOGRAPHY } from '../constants';
-
-const { width: screenWidth } = Dimensions.get('window');
 
 interface CardDeckProps {
   items: any[];
@@ -36,8 +34,8 @@ const CardDeck: React.FC<CardDeckProps> = ({
   onSkip,
   onComplete,
   renderCard,
-  cardWidth = screenWidth * 0.85,
-  cardHeight = screenWidth * 0.6,
+  cardWidth,
+  cardHeight,
   maxVisibleCards = 3,
   primaryButtonText = 'Yes',
   secondaryButtonText = 'Skip',
@@ -45,6 +43,25 @@ const CardDeck: React.FC<CardDeckProps> = ({
   onPrimaryAction,
   onSecondaryAction,
 }) => {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  
+  // Use provided dimensions or calculate responsive defaults
+  // Max width ensures cards don't get too wide on tablets
+  const effectiveCardWidth = cardWidth || Math.min(screenWidth * 0.95, 400);
+  // Use flexible height that adapts to content but respects max
+  // Account for button overlap (28px), tab bar height (~80px), and bottom padding to avoid overlapping
+  const buttonOverlap = 28; // Half of button height (56px / 2)
+  const tabBarHeight = 80; // Approximate tab bar height (including floating button)
+  const bottomPadding = 32; // Extra spacing below deck wrapper
+  // Calculate available height: screen height minus tab bar, button overlap, and padding
+  // Use a responsive percentage based on screen height - smaller screens get less height
+  const availableHeight = screenHeight - tabBarHeight - buttonOverlap - bottomPadding;
+  // Use a percentage of available height, with a minimum to ensure usability
+  // Smaller screens (like iPhone 13 Pro) will get a smaller percentage
+  const heightPercentage = screenHeight < 900 ? 0.5 : 0.55; // 50% for smaller screens, 55% for larger
+  const calculatedHeight = availableHeight * heightPercentage;
+  const effectiveCardHeight = cardHeight || Math.max(350, Math.min(calculatedHeight, 650));
+
   const handlePrimaryAction = () => {
     if (primaryButtonDisabled) return;
     const currentItem = items[currentIndex];
@@ -68,128 +85,236 @@ const CardDeck: React.FC<CardDeckProps> = ({
     }
   };
 
-  const renderCardWithAnimations = (item: any, index: number, relativeIndex: number) => {
-    const isTopCard = relativeIndex === 0;
-    
-    // Calculate scale for inactive cards
-    const scaleFactor = isTopCard ? 1 : Math.max(0.95 - (relativeIndex * 0.03), 0.7);
-
-    const cardStyle = {
-      position: 'absolute' as const,
-      width: cardWidth,
-      height: cardHeight,
-      bottom: isTopCard ? 160 : 175 + (relativeIndex * 25),
-      zIndex: isTopCard ? 10 : 10 - relativeIndex,
-      transform: [
-        { scale: scaleFactor },
-      ],
-    };
-
-    const cardInnerStyle = {
-      width: cardWidth,
-      height: cardHeight,
-      backgroundColor: COLORS.surface,
-      borderRadius: 20,
-      ...SHADOWS.medium,
-      overflow: 'hidden' as const,
-    };
-
-    return (
-      <Animated.View
-        key={item.id || index}
-        style={cardStyle}
-      >
-        <View style={cardInnerStyle}>
-          {renderCard(item, index, relativeIndex, isTopCard)}
-        </View>
-        {/* Buttons only on top card - positioned outside card to hang off bottom */}
-        {isTopCard && (
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleSecondaryAction}
-            >
-              <Text style={styles.secondaryButtonText}>{secondaryButtonText}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.button, 
-                styles.primaryButton,
-                primaryButtonDisabled && styles.primaryButtonDisabled
-              ]}
-              onPress={handlePrimaryAction}
-              disabled={primaryButtonDisabled}
-            >
-              <Text style={[
-                styles.primaryButtonText,
-                primaryButtonDisabled && styles.primaryButtonTextDisabled
-              ]}>
-                {primaryButtonText}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Animated.View>
-    );
-  };
-
   // Check if deck is complete
   const isComplete = currentIndex >= items.length;
+  const currentItem = !isComplete ? items[currentIndex] : null;
+
+  // Get visible cards for stacking effect (current + next 2-3 cards behind)
+  const visibleCards = !isComplete && currentItem
+    ? items
+        .map((item, index) => ({ item, index }))
+        .filter(({ index }) => index >= currentIndex)
+        .slice(0, maxVisibleCards)
+    : [];
+
+  const renderStackedCard = (item: any, index: number, relativeIndex: number) => {
+    const isTopCard = relativeIndex === 0;
+    
+    // Calculate scale and opacity for stacked effect
+    const scaleFactor = isTopCard ? 1 : 0.95 - (relativeIndex - 1) * 0.03;
+    
+    // For background cards, calculate position to show just a peek at the top
+    // relativeIndex 1 = first card behind (show ~8px), relativeIndex 2 = second card behind (show ~10px), etc.
+    // For relativeIndex 1: peekHeight = 8 + (1-1)*2 = 8px
+    // For relativeIndex 2: peekHeight = 8 + (2-1)*2 = 10px
+    // For relativeIndex 3: peekHeight = 8 + (3-1)*2 = 12px
+    const peekHeight = isTopCard ? 0 : 8 + ((relativeIndex - 1) * 2);
+    
+    // Position background card so only peekHeight is visible above the top card
+    // The top card sits at paddingTop (20px) from the top of deckWrapper
+    // We want the background card's bottom edge to be at (paddingTop - peekHeight) from the top
+    // Since the card is effectiveCardHeight tall, its top should be at: (paddingTop - peekHeight) - effectiveCardHeight
+    // Example: paddingTop=20px, cardHeight=500px, peekHeight=8px -> top = (20-8)-500 = -488px
+    // This positions the card so only the bottom 8px shows above the top card
+    const paddingTop = 20; // Space for background card peeks
+    const topOffset = isTopCard ? 0 : (paddingTop - peekHeight) - (24 * relativeIndex);
+
+    if (isTopCard) {
+      // Top card - natural flow, no absolute positioning
+      return (
+        <View
+          key={item.id || index}
+          style={[
+            styles.cardWrapper,
+            {
+              width: effectiveCardWidth,
+              zIndex: maxVisibleCards - relativeIndex,
+            },
+          ]}
+        >
+          {/* Outer container for shadow - no overflow to allow shadow to render */}
+          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, maxHeight: effectiveCardHeight }]}>
+            {/* Inner container for content clipping */}
+            <View style={styles.cardContentContainer}>
+              <View style={styles.cardInnerContainer}>
+                <ScrollView 
+                  style={styles.cardInner}
+                  contentContainerStyle={styles.cardInnerContent}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={true}
+                >
+                  {renderCard(item, index, relativeIndex, true)}
+                </ScrollView>
+              </View>
+              {/* Buttons on top card - positioned to hang halfway out */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.secondaryButton]}
+                  onPress={handleSecondaryAction}
+                >
+                  <Text style={styles.secondaryButtonText}>{secondaryButtonText}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.button, 
+                    styles.primaryButton,
+                    primaryButtonDisabled && styles.primaryButtonDisabled
+                  ]}
+                  onPress={handlePrimaryAction}
+                  disabled={primaryButtonDisabled}
+                >
+                  <Text style={[
+                    styles.primaryButtonText,
+                    primaryButtonDisabled && styles.primaryButtonTextDisabled
+                  ]}>
+                    {primaryButtonText}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    } else {
+      // Background cards - absolute positioning to peek behind top card
+      return (
+        <View
+          key={item.id || index}
+          pointerEvents="none"
+          style={[
+            styles.backgroundCardWrapper,
+            {
+              top: topOffset,
+              zIndex: maxVisibleCards - relativeIndex,
+              transform: [{ scale: scaleFactor }],
+            },
+          ]}
+        >
+          {/* Outer container for shadow - no overflow to allow shadow to render */}
+          <View style={[styles.cardShadowContainer, { width: effectiveCardWidth, maxHeight: effectiveCardHeight - peekHeight * relativeIndex }]}>
+            {/* Inner container for content clipping */}
+            <View style={styles.cardContentContainer}>
+              <View style={styles.cardInnerContainer}>
+                <ScrollView 
+                  style={styles.cardInner}
+                  contentContainerStyle={styles.cardInnerContent}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={false}
+                >
+                  {renderCard(item, index, relativeIndex, false)}
+                </ScrollView>
+              </View>
+            </View>
+          </View>
+        </View>
+      );
+    }
+  };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+    <View style={styles.container}>
       {isComplete ? (
-        <View style={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingHorizontal: 20,
-        }}>
+        <View style={styles.completionPlaceholder}>
           {/* Completion content will be rendered by parent */}
         </View>
-      ) : (
-        <>
-          {items
-            .map((item, index) => ({ item, index }))
-            .filter(({ index }) => index >= currentIndex)
-            .slice(0, maxVisibleCards)
-            .map(({ item, index }, relativeIndex) => 
-              renderCardWithAnimations(item, index, relativeIndex)
-            )}
-        </>
-      )}
+      ) : visibleCards.length > 0 ? (
+        <View style={[styles.deckWrapper, { paddingTop: 20, paddingBottom: 40 }]}>
+          {/* Render background cards first (behind) - absolute positioned */}
+          {visibleCards.slice(1).reverse().map(({ item, index }, reverseIndex) => {
+            const relativeIndex = visibleCards.length - 1 - reverseIndex;
+            return renderStackedCard(item, index, relativeIndex);
+          })}
+          {/* Render top card last (on top) - natural flow */}
+          {renderStackedCard(visibleCards[0].item, visibleCards[0].index, 0)}
+        </View>
+      ) : null}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: SPACING.md,
+  },
+  deckWrapper: {
+    width: '100%',
+    height: 'auto',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    position: 'relative',
+    // Don't use overflow: hidden here - it clips shadows
+    // Background cards will be positioned to show only peekHeight
+  },
+  cardWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backgroundCardWrapper: {
+    position: 'absolute',
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    left: 0,
+  },
+  cardShadowContainer: {
+    width: '100%',
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    ...SHADOWS.medium,
+  },
+  cardContentContainer: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
+    flexDirection: 'column',
+    position: 'relative', // Needed for absolute positioned buttons
+  },
+  cardInnerContainer: {
+    width: '100%',
+    flex: 1,
+    overflow: 'hidden', // Clip the scrollable content, but not the buttons
+  },
+  cardInner: {
+    width: '100%',
+    flex: 1,
+  },
+  cardInnerContent: {
+    flexGrow: 1,
+  },
   buttonContainer: {
     position: 'absolute',
-    bottom: -30, // Half of button height (60px / 2 = 30px) to create 50% overlap
+    bottom: -28, // Half of button height (56px / 2 = 28px) to create 50% overlap
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
+    gap: SPACING.md,
   },
   button: {
-    height: 60,
-    minWidth: 120,
-    borderRadius: 30,
+    flex: 1,
+    maxWidth: 150,
+    height: 56,
+    minHeight: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
     ...SHADOWS.medium,
   },
   primaryButton: {
     backgroundColor: COLORS.primary,
-    marginLeft: 20, // 40px gap total (20px on each side)
   },
   secondaryButton: {
     backgroundColor: COLORS.surface,
     borderWidth: 2,
     borderColor: COLORS.primary,
-    marginRight: 20, // 40px gap total (20px on each side)
   },
   primaryButtonText: {
     ...TYPOGRAPHY.bodyBold,
@@ -205,6 +330,12 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...TYPOGRAPHY.bodyBold,
     color: COLORS.primary,
+  },
+  completionPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
   },
 });
 

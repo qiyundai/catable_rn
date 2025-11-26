@@ -11,12 +11,14 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import { LoginForm, RegisterForm } from '../types';
 import { COLORS, TYPOGRAPHY, SPACING, SOCIAL_LOGIN_PROVIDERS } from '../constants';
 import { Logo } from '../components/Logo';
 
 const AuthScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [showInitialView, setShowInitialView] = useState(true);
   const [isLogin, setIsLogin] = useState(true);
   const [loginForm, setLoginForm] = useState<LoginForm>({
@@ -47,7 +49,7 @@ const AuthScreen: React.FC = () => {
 
   const handleLogin = async () => {
     if (!loginForm.email || !loginForm.password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.fillAllFields'));
       return;
     }
 
@@ -69,12 +71,12 @@ const AuthScreen: React.FC = () => {
 
   const handleRegister = async () => {
     if (!registerForm.userName || !registerForm.email || !registerForm.password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('auth.fillAllFields'));
       return;
     }
 
     if (registerForm.password !== registerForm.confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('auth.passwordsDoNotMatch'));
       return;
     }
 
@@ -142,15 +144,15 @@ const AuthScreen: React.FC = () => {
               
               <View style={styles.initialButtonsContainer}>
                 <TouchableOpacity style={styles.loginButton} onPress={handleInitialLogin}>
-                  <Text style={styles.loginButtonText}>Login</Text>
+                  <Text style={styles.loginButtonText}>{t('auth.signIn')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.registerButton} onPress={handleInitialRegister}>
-                  <Text style={styles.registerButtonText}>Register</Text>
+                  <Text style={styles.registerButtonText}>{t('auth.signUp')}</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity style={styles.guestLink} onPress={handleGuestMode}>
-                  <Text style={styles.guestLinkText}>Continue as a guest</Text>
+                  <Text style={styles.guestLinkText}>{t('auth.continueAsGuest')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -158,7 +160,7 @@ const AuthScreen: React.FC = () => {
             <>
               <View style={styles.header}>
                 <Text style={styles.subtitle}>
-                  {isLogin ? 'Welcome back!' : 'Create your account'}
+                  {isLogin ? t('auth.welcomeBack') : t('auth.createAccount')}
                 </Text>
               </View>
 
@@ -174,7 +176,7 @@ const AuthScreen: React.FC = () => {
                   <>
                     <TextInput
                       style={styles.input}
-                      placeholder="Email"
+                      placeholder={t('auth.email')}
                       value={loginForm.email}
                       onChangeText={(text) => setLoginForm({ ...loginForm, email: text })}
                       keyboardType="email-address"
@@ -182,26 +184,26 @@ const AuthScreen: React.FC = () => {
                     />
                     <TextInput
                       style={styles.input}
-                      placeholder="Password"
+                      placeholder={t('auth.password')}
                       value={loginForm.password}
                       onChangeText={(text) => setLoginForm({ ...loginForm, password: text })}
                       secureTextEntry
                     />
                     <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
-                      <Text style={styles.primaryButtonText}>Login</Text>
+                      <Text style={styles.primaryButtonText}>{t('auth.signIn')}</Text>
                     </TouchableOpacity>
                   </>
                 ) : (
                   <>
                     <TextInput
                       style={styles.input}
-                      placeholder="Username"
+                      placeholder={t('auth.userName')}
                       value={registerForm.userName}
                       onChangeText={(text) => setRegisterForm({ ...registerForm, userName: text })}
                     />
                     <TextInput
                       style={styles.input}
-                      placeholder="Email"
+                      placeholder={t('auth.email')}
                       value={registerForm.email}
                       onChangeText={(text) => setRegisterForm({ ...registerForm, email: text })}
                       keyboardType="email-address"
@@ -209,27 +211,27 @@ const AuthScreen: React.FC = () => {
                     />
                     <TextInput
                       style={styles.input}
-                      placeholder="Password"
+                      placeholder={t('auth.password')}
                       value={registerForm.password}
                       onChangeText={(text) => setRegisterForm({ ...registerForm, password: text })}
                       secureTextEntry
                     />
                     <TextInput
                       style={styles.input}
-                      placeholder="Confirm Password"
+                      placeholder={t('auth.confirmPassword')}
                       value={registerForm.confirmPassword}
                       onChangeText={(text) => setRegisterForm({ ...registerForm, confirmPassword: text })}
                       secureTextEntry
                     />
                     <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
-                      <Text style={styles.primaryButtonText}>Register</Text>
+                      <Text style={styles.primaryButtonText}>{t('auth.signUp')}</Text>
                     </TouchableOpacity>
                   </>
                 )}
 
                 <View style={styles.divider}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>{isLogin ? 'Or login with' : 'Or sign up with'}</Text>
+                  <Text style={styles.dividerText}>{isLogin ? t('auth.orLoginWith') : t('auth.orSignUpWith')}</Text>
                   <View style={styles.dividerLine} />
                 </View>
 
@@ -246,7 +248,7 @@ const AuthScreen: React.FC = () => {
           </View>
 
                 <TouchableOpacity style={styles.guestButton} onPress={handleGuestMode}>
-                  <Text style={styles.guestButtonText}>Continue as Guest</Text>
+                  <Text style={styles.guestButtonText}>{t('auth.continueAsGuest')}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -254,7 +256,7 @@ const AuthScreen: React.FC = () => {
                   onPress={() => setIsLogin(!isLogin)}
                 >
                   <Text style={styles.switchButtonText}>
-                    {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                    {isLogin ? t('auth.dontHaveAccount') : t('auth.alreadyHaveAccount')}
                   </Text>
                 </TouchableOpacity>
               </View>

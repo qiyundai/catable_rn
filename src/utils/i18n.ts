@@ -12,11 +12,20 @@ const resources = {
   ja: { translation: ja },
 };
 
+// Get initial language from device locale or default to 'en'
+const getInitialLanguage = (): string => {
+  try {
+    return Localization.locale.split('-')[0]; // Get language code (e.g., 'en' from 'en-US')
+  } catch {
+    return 'en';
+  }
+};
+
 i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: Localization.locale.split('-')[0], // Get language code (e.g., 'en' from 'en-US')
+    lng: getInitialLanguage(),
     fallbackLng: 'en',
     interpolation: {
       escapeValue: false,
@@ -25,5 +34,17 @@ i18n
       useSuspense: false,
     },
   });
+
+// Function to change language
+export const changeLanguage = (language: 'en' | 'zh' | 'ja') => {
+  i18n.changeLanguage(language);
+};
+
+// Function to initialize language from user preference
+export const initializeLanguage = (language?: 'en' | 'zh' | 'ja') => {
+  if (language && ['en', 'zh', 'ja'].includes(language)) {
+    i18n.changeLanguage(language);
+  }
+};
 
 export default i18n;

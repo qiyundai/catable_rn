@@ -13,7 +13,15 @@
     "done": "完成",
     "loading": "加载中...",
     "error": "错误",
-    "success": "成功"
+    "success": "成功",
+    "notSet": "未设置",
+    "select": "选择...",
+    "selectRegion": "选择地区",
+    "hour": "小时",
+    "minute": "分钟",
+    "period": "时段",
+    "am": "上午",
+    "pm": "下午"
   },
   "auth": {
     "welcome": "欢迎使用 CAT-able",
@@ -22,10 +30,12 @@
     "email": "邮箱",
     "password": "密码",
     "confirmPassword": "确认密码",
-    "displayName": "显示名称",
+    "userName": "用户名",
     "continueAsGuest": "游客模式继续",
     "alreadyHaveAccount": "已有账户？登录",
-    "dontHaveAccount": "没有账户？注册"
+    "dontHaveAccount": "没有账户？注册",
+    "fillAllFields": "请填写所有字段",
+    "passwordsDoNotMatch": "密码不匹配"
   },
   "onboarding": {
     "welcome": "让我们开始吧！",
@@ -44,7 +54,9 @@
     "recurringTasksDescription": "选择定期活动",
     "reminderTime": "提醒时间",
     "reminderTimeDescription": "您希望什么时候收到日常提醒？",
-    "getStarted": "开始使用"
+    "getStarted": "开始使用",
+    "goBack": "返回",
+    "noCatsWarning": "您需要至少添加一只猫才能继续。请返回并添加您的猫咪信息。"
   },
   "tasks": {
     "title": "任务",
@@ -82,7 +94,17 @@
     "dayStreak": "天连续记录",
     "totalLogs": "总记录数",
     "cats": "猫咪",
-    "totalStreakDays": "总连续天数"
+    "totalStreakDays": "总连续天数",
+    "petNameEmpty": "宠物名称不能为空",
+    "selectBreed": "请选择品种",
+    "selectGender": "请选择性别",
+    "describePersonality": "请描述您猫咪的性格",
+    "setAge": "请为您的宠物设置年龄",
+    "invalidPetId": "无效的宠物ID",
+    "profileUpdated": "宠物档案更新成功",
+    "enterCatName": "请输入您猫咪的名字",
+    "selectCatBreed": "请选择您猫咪的品种",
+    "describeCatPersonality": "请描述您猫咪的性格"
   },
   "settings": {
     "title": "设置",
@@ -97,10 +119,37 @@
   },
   "profile": {
     "title": "个人资料",
-    "displayName": "显示名称",
+    "userName": "用户名",
     "email": "邮箱",
     "region": "地区",
     "language": "语言",
-    "signOut": "退出登录"
+    "appLanguage": "应用语言",
+    "signOut": "退出登录",
+    "userInformation": "用户信息",
+    "notificationsReminders": "通知和提醒",
+    "dailyReminderTime": "每日提醒时间",
+    "reminderNote": "您将在此时间收到一次每日提醒以完成任务",
+    "note": "备注",
+    "enterUsername": "输入用户名",
+    "enterEmail": "输入邮箱",
+    "selectLanguage": "选择语言",
+    "selectRegion": "选择地区",
+    "setReminderTime": "设置提醒时间",
+    "usernameEmpty": "用户名不能为空",
+    "emailEmpty": "邮箱不能为空",
+    "invalidEmail": "请输入有效的邮箱地址",
+    "profileUpdated": "个人资料更新成功",
+    "languageUpdated": "语言更新成功",
+    "signOutConfirm": "您确定要退出登录吗？",
+    "signOutTitle": "退出登录",
+    "noTasksConfigured": "尚未配置任务",
+    "reminderTimeUpdated": "提醒时间更新成功",
+    "reminderTimeUpdateFailed": "更新提醒时间失败",
+    "permissionRequired": "需要权限",
+    "cameraRollPermission": "抱歉，我们需要相册权限来选择照片！",
+    "pickImageFailed": "选择图片失败",
+    "english": "English",
+    "chinese": "中文",
+    "japanese": "日本語"
   }
 }
