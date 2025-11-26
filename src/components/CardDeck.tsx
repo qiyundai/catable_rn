@@ -122,6 +122,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
 
     if (isTopCard) {
       // Top card - natural flow, no absolute positioning
+      // Structure: cardWrapper > [cardShadowContainer (clips content), buttonContainer (outside clip)]
       return (
         <View
           key={item.id || index}
@@ -130,10 +131,12 @@ const CardDeck: React.FC<CardDeckProps> = ({
             {
               width: effectiveCardWidth,
               zIndex: maxVisibleCards - relativeIndex,
+              // Add margin bottom to make room for buttons hanging off
+              marginBottom: buttonOverlap,
             },
           ]}
         >
-          {/* Outer container for shadow - fixed height for consistency */}
+          {/* Card container - clips overflow but buttons are outside */}
           <View style={[
             styles.cardShadowContainer, 
             { 
@@ -141,45 +144,41 @@ const CardDeck: React.FC<CardDeckProps> = ({
               height: effectiveCardHeight,
             }
           ]}>
-            {/* Inner container for content clipping */}
-            <View style={[styles.cardContentContainer, { height: effectiveCardHeight }]}>
-              <View style={[styles.cardInnerContainer, { height: effectiveCardHeight }]}>
-                <ScrollView 
-                  style={[styles.cardInner, { height: effectiveCardHeight }]}
-                  contentContainerStyle={styles.cardInnerContent}
-                  showsVerticalScrollIndicator={true}
-                  scrollEnabled={true}
-                  nestedScrollEnabled={true}
-                >
-                  {renderCard(item, index, relativeIndex, true)}
-                </ScrollView>
-              </View>
-              {/* Buttons on top card - positioned to hang halfway out */}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                  style={[styles.button, styles.secondaryButton]}
-                  onPress={handleSecondaryAction}
-                >
-                  <Text style={styles.secondaryButtonText}>{secondaryButtonText}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.button, 
-                    styles.primaryButton,
-                    primaryButtonDisabled && styles.primaryButtonDisabled
-                  ]}
-                  onPress={handlePrimaryAction}
-                  disabled={primaryButtonDisabled}
-                >
-                  <Text style={[
-                    styles.primaryButtonText,
-                    primaryButtonDisabled && styles.primaryButtonTextDisabled
-                  ]}>
-                    {primaryButtonText}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            {/* Scrollable content area */}
+            <ScrollView 
+              style={[styles.cardInner, { height: effectiveCardHeight }]}
+              contentContainerStyle={styles.cardInnerContent}
+              showsVerticalScrollIndicator={true}
+              scrollEnabled={true}
+              nestedScrollEnabled={true}
+            >
+              {renderCard(item, index, relativeIndex, true)}
+            </ScrollView>
+          </View>
+          {/* Buttons OUTSIDE the clipping container - positioned relative to cardWrapper */}
+          <View style={[styles.buttonContainer, { width: effectiveCardWidth }]}>
+            <TouchableOpacity
+              style={[styles.button, styles.secondaryButton]}
+              onPress={handleSecondaryAction}
+            >
+              <Text style={styles.secondaryButtonText}>{secondaryButtonText}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button, 
+                styles.primaryButton,
+                primaryButtonDisabled && styles.primaryButtonDisabled
+              ]}
+              onPress={handlePrimaryAction}
+              disabled={primaryButtonDisabled}
+            >
+              <Text style={[
+                styles.primaryButtonText,
+                primaryButtonDisabled && styles.primaryButtonTextDisabled
+              ]}>
+                {primaryButtonText}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       );
@@ -199,7 +198,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
             },
           ]}
         >
-          {/* Outer container for shadow - same fixed height as top card */}
+          {/* Card container - clips overflow */}
           <View style={[
             styles.cardShadowContainer, 
             { 
@@ -207,19 +206,15 @@ const CardDeck: React.FC<CardDeckProps> = ({
               height: effectiveCardHeight,
             }
           ]}>
-            {/* Inner container for content clipping */}
-            <View style={[styles.cardContentContainer, { height: effectiveCardHeight }]}>
-              <View style={[styles.cardInnerContainer, { height: effectiveCardHeight }]}>
-                <ScrollView 
-                  style={[styles.cardInner, { height: effectiveCardHeight }]}
-                  contentContainerStyle={styles.cardInnerContent}
-                  showsVerticalScrollIndicator={false}
-                  scrollEnabled={false}
-                >
-                  {renderCard(item, index, relativeIndex, false)}
-                </ScrollView>
-              </View>
-            </View>
+            {/* Scrollable content area */}
+            <ScrollView 
+              style={[styles.cardInner, { height: effectiveCardHeight }]}
+              contentContainerStyle={styles.cardInnerContent}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+            >
+              {renderCard(item, index, relativeIndex, false)}
+            </ScrollView>
           </View>
         </View>
       );
@@ -282,30 +277,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
+    overflow: 'hidden', // Clip scrollable content within the card
     ...SHADOWS.medium,
-  },
-  cardContentContainer: {
-    width: '100%',
-    borderRadius: 20,
-    flexDirection: 'column',
-    position: 'relative', // Needed for absolute positioned buttons
-    overflow: 'hidden',
-  },
-  cardInnerContainer: {
-    width: '100%',
-    borderRadius: 20,
-    overflow: 'hidden', // Clip the scrollable content
-    ...Platform.select({
-      web: {
-        // Ensure overflow is properly handled on web
-        overflowY: 'auto',
-        overflowX: 'hidden',
-      },
-      default: {},
-    }),
   },
   cardInner: {
     width: '100%',
+    borderRadius: 20,
     ...Platform.select({
       web: {
         // Ensure ScrollView works on web
@@ -319,11 +296,11 @@ const styles = StyleSheet.create({
   },
   cardInnerContent: {
     flexGrow: 1,
-    paddingBottom: SPACING.xl, // Add padding at bottom to prevent content from being hidden behind buttons
+    paddingBottom: SPACING.xxl, // Add padding at bottom so content isn't hidden behind buttons
   },
   buttonContainer: {
     position: 'absolute',
-    bottom: -28, // Half of button height (56px / 2 = 28px) to create 50% overlap
+    bottom: -28, // Hang buttons 28px below card (half of 56px button height)
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -331,6 +308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
     gap: SPACING.md,
+    zIndex: 10, // Ensure buttons are above card
   },
   button: {
     flex: 1,
