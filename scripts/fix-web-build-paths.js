@@ -74,9 +74,28 @@ if (fs.existsSync(indexPath)) {
   // Remove defer attribute when adding type="module" as modules are deferred by default
   htmlContent = htmlContent.replace(/<script src="([^"]*)" defer><\/script>/g, '<script type="module" src="$1"></script>');
   
+  // Modify the CSS to allow scrolling on longer screens
+  // Replace 'overflow: hidden' with 'overflow: auto' to allow scrolling
+  htmlContent = htmlContent.replace(
+    /body\s*\{\s*overflow:\s*hidden;\s*\}/g,
+    'body { overflow: auto; }'
+  );
+  
+  // Add CSS to ensure the root container is scrollable
+  if (!htmlContent.includes('scroll-behavior')) {
+    htmlContent = htmlContent.replace(
+      '</style>',
+      `
+      /* Enable smooth scrolling and allow overflow */
+      html { scroll-behavior: smooth; }
+      #root { overflow: auto; }
+    </style>`
+    );
+  }
+  
   if (originalHtml !== htmlContent) {
     fs.writeFileSync(indexPath, htmlContent, 'utf8');
-    console.log('Fixed paths and script type in index.html');
+    console.log('Fixed paths, script type, and scroll behavior in index.html');
   }
 }
 
