@@ -18,7 +18,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAppStore } from '../store';
 import { PetForm, RootStackParamList, OnboardingStep } from '../types';
-import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS, PET_PERSONALITY_OPTIONS } from '../constants';
+import { COLORS, TYPOGRAPHY, SPACING, SHADOWS, ONBOARDING_STEPS, PET_GENDER_OPTIONS, PET_BREED_OPTIONS } from '../constants';
 import ProgressBar from '../components/ProgressBar';
 import WheelPicker from '../components/WheelPicker';
 import TagSelector from '../components/TagSelector';
@@ -96,7 +96,6 @@ const OnboardingScreen: React.FC = () => {
   const [showAgePicker, setShowAgePicker] = useState(false);
   const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [showBreedPicker, setShowBreedPicker] = useState(false);
-  const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
 
   // Reminder time wheel picker states
   const [selectedHourIndex, setSelectedHourIndex] = useState(8); // 9 AM (index 8)
@@ -108,7 +107,6 @@ const OnboardingScreen: React.FC = () => {
   const [tempSelectedMonth, setTempSelectedMonth] = useState(0);
   const [tempGender, setTempGender] = useState<'male' | 'female' | 'other'>('other');
   const [tempBreed, setTempBreed] = useState('');
-  const [tempPersonality, setTempPersonality] = useState('');
 
   // Wheel picker data arrays
   const hourOptions = Array.from({ length: 12 }, (_, i) => ({
@@ -240,11 +238,6 @@ const OnboardingScreen: React.FC = () => {
     setShowBreedPicker(true);
   };
 
-  const openPersonalityPicker = () => {
-    setTempPersonality(getCurrentPetForm().personality);
-    setShowPersonalityPicker(true);
-  };
-
   const cancelAgePicker = () => {
     setShowAgePicker(false);
   };
@@ -275,16 +268,6 @@ const OnboardingScreen: React.FC = () => {
     updateCurrentPetForm({ breed: tempBreed });
     setShowBreedPicker(false);
   };
-
-  const cancelPersonalityPicker = () => {
-    setShowPersonalityPicker(false);
-  };
-
-  const savePersonalityPicker = () => {
-    updateCurrentPetForm({ personality: tempPersonality });
-    setShowPersonalityPicker(false);
-  };
-
 
   const handleNext = () => {
     if (currentCardIndex < allSteps.length - 1) {
@@ -826,15 +809,16 @@ const OnboardingScreen: React.FC = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>{t('onboarding.personality')}</Text>
-                <TouchableOpacity
-                  style={styles.inputField}
-                  onPress={openPersonalityPicker}
-                >
-                  <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.personality || t('onboarding.selectPersonality')}</Text>
-                    <Text style={styles.inputIcon}>⌄</Text>
-                  </View>
-                </TouchableOpacity>
+                <TextInput
+                  style={[styles.inputField, styles.textAreaInput]}
+                  placeholder={t('onboarding.describePersonality')}
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={currentPetForm.personality}
+                  onChangeText={(text) => updateCurrentPetForm({ personality: text })}
+                  multiline
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                />
               </View>
             </View>
           </ScrollView>
@@ -1227,54 +1211,6 @@ const OnboardingScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {/* Personality Picker */}
-      <Modal
-        visible={showPersonalityPicker}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={cancelPersonalityPicker}
-      >
-        <View
-          style={styles.modalOverlay}
-        >
-          <View
-            style={styles.pickerContainer}
-          >
-            <View style={styles.pickerHeader}>
-              <TouchableOpacity onPress={cancelPersonalityPicker}>
-                <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <Text style={styles.pickerTitle}>{t('onboarding.selectPersonality')}</Text>
-              <TouchableOpacity onPress={savePersonalityPicker}>
-                <Text style={styles.pickerSaveText}>{t('common.save')}</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.optionsList} showsVerticalScrollIndicator={true}>
-              {PET_PERSONALITY_OPTIONS.map(personality => (
-                <TouchableOpacity
-                  key={personality.value}
-                  style={[
-                    styles.optionItem,
-                    tempPersonality === personality.value && styles.optionItemSelected
-                  ]}
-                  onPress={() => setTempPersonality(personality.value)}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    tempPersonality === personality.value && styles.optionTextSelected
-                  ]}>
-                    {personality.label}
-                  </Text>
-                  {tempPersonality === personality.value && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
       {/* Custom Task Modal */}
       <Modal
         visible={showCustomTaskModal}
@@ -1486,6 +1422,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+  },
+  textAreaInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   inputValueContainer: {
     flexDirection: 'row',

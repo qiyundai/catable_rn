@@ -72,7 +72,7 @@
     "breed": "Breed",
     "personality": "Personality",
     "selectBreed": "Select breed",
-    "selectPersonality": "Select Personality",
+    "describePersonality": "Describe your cat's personality...",
     "selectAge": "Select Age",
     "selectGender": "Select Gender",
     "years": "Years",

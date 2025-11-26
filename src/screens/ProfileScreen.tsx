@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, TextInput, ScrollView, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, TextInput, ScrollView, Modal, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -573,13 +573,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    ...Platform.select({
+      web: {
+        height: '100%',
+        overflow: 'hidden',
+      },
+      default: {},
+    }),
   },
   scrollView: {
     flex: 1,
+    ...Platform.select({
+      web: {
+        height: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+      },
+      default: {},
+    }),
   },
   scrollContent: {
     padding: SPACING.lg,
     paddingBottom: SPACING.xl,
+    ...Platform.select({
+      web: {
+        minHeight: 'auto',
+      },
+      default: {},
+    }),
   },
   profileHeader: {
     alignItems: 'center',
