@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "export:web": "expo export --platform web && node scripts/fix-web-build-paths.js && if (Test-Path dist) { if (Test-Path web-build) { Remove-Item -Recurse -Force web-build }; Move-Item -Path dist -Destination web-build }"
   },
   "dependencies": {
     "@expo-google-fonts/lobster-two": "^0.4.1",
