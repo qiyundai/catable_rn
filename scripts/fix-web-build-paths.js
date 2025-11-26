@@ -70,10 +70,21 @@ if (fs.existsSync(indexPath)) {
   htmlContent = htmlContent.replace(/href=["']\/(assets|_expo|favicon)/g, 'href="./$1');
   htmlContent = htmlContent.replace(/src=["']\/(assets|_expo|favicon)/g, 'src="./$1');
   
+  // Change script to type="module" (needed for import.meta support)
+  // Remove defer attribute when adding type="module" as modules are deferred by default
+  htmlContent = htmlContent.replace(/<script src="([^"]*)" defer><\/script>/g, '<script type="module" src="$1"></script>');
+  
   if (originalHtml !== htmlContent) {
     fs.writeFileSync(indexPath, htmlContent, 'utf8');
-    console.log('Fixed paths in index.html');
+    console.log('Fixed paths and script type in index.html');
   }
+}
+
+// Create .nojekyll file to prevent Jekyll from ignoring _expo directory
+const nojekyllPath = path.join(webBuildDir, '.nojekyll');
+if (!fs.existsSync(nojekyllPath)) {
+  fs.writeFileSync(nojekyllPath, '', 'utf8');
+  console.log('Created .nojekyll file');
 }
 
 console.log(`\n✅ Fixed ${totalReplacements} absolute paths in ${jsFiles.length} JavaScript files`);
