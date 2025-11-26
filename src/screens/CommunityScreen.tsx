@@ -138,9 +138,16 @@ const CommunityScreen: React.FC = () => {
     );
   };
 
+  // On web, TouchableWithoutFeedback can block TextInput focus
+  const dismissKeyboard = () => {
+    if (Platform.OS !== 'web') {
+      Keyboard.dismiss();
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
         <View style={styles.mainContent}>
           {/* 2. Current Island */}
           <View style={styles.islandsContainer}>
@@ -180,40 +187,41 @@ const CommunityScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* 4. Pill Input Bar - Only show for "My Island" */}
-          {currentIsland === 0 && (
-            <View style={[styles.pillInputContainer, { marginBottom: keyboardHeight }]}>
-              <View style={styles.pillInput}>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Share something about your cat..."
-                  value={message}
-                  onChangeText={setMessage}
-                  multiline
-                  maxLength={200}
-                />
-                <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.sendButton, 
-                      !message.trim() && styles.disabledSendButton
-                    ]}
-                    onPress={handleSendMessage}
-                    disabled={!message.trim()}
-                  >
-                    <Ionicons
-                      name="paper-plane"
-                      size={20}
-                      color="#FFFFFF"
-                    />
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
-            </View>
-          )}
         </View>
       </TouchableWithoutFeedback>
+
+      {/* 4. Pill Input Bar - OUTSIDE TouchableWithoutFeedback for web compatibility */}
+      {currentIsland === 0 && (
+        <View style={[styles.pillInputContainer, { marginBottom: keyboardHeight }]}>
+          <View style={styles.pillInput}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Share something about your cat..."
+              placeholderTextColor={COLORS.textSecondary}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+              maxLength={200}
+            />
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity 
+                style={[
+                  styles.sendButton, 
+                  !message.trim() && styles.disabledSendButton
+                ]}
+                onPress={handleSendMessage}
+                disabled={!message.trim()}
+              >
+                <Ionicons
+                  name="paper-plane"
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        </View>
+      )}
     </View>
   );
 };

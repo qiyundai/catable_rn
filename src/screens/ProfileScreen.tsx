@@ -250,7 +250,12 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={Platform.OS === 'ios'}
+      >
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
@@ -576,7 +581,9 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         height: '100%',
-        overflow: 'hidden',
+        maxHeight: '100%',
+        display: 'flex',
+        flexDirection: 'column',
       },
       default: {},
     }),
@@ -585,21 +592,24 @@ const styles = StyleSheet.create({
     flex: 1,
     ...Platform.select({
       web: {
-        height: '100%',
-        overflowY: 'auto',
+        flex: 1,
+        overflowY: 'scroll',
         overflowX: 'hidden',
+        WebkitOverflowScrolling: 'touch',
       },
       default: {},
     }),
   },
   scrollContent: {
     padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
+    paddingBottom: 120, // Extra padding for tab bar on web
     ...Platform.select({
       web: {
-        minHeight: 'auto',
+        flexGrow: 1,
       },
-      default: {},
+      default: {
+        paddingBottom: SPACING.xl,
+      },
     }),
   },
   profileHeader: {
