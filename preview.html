@@ -8,8 +8,11 @@
 </head>
 <body class="preview-shell">
   <header class="preview-header">
-    <h1>Catable</h1>
-    <p class="preview-message">Loading Catable Web Preview…</p>
+    <div class="preview-header-content">
+      <a href="./index.html" class="back-link">← Back to Landing Page</a>
+      <h1>Catable</h1>
+      <p class="preview-message">Loading Catable Web Preview…</p>
+    </div>
   </header>
   <div class="preview-frame-wrapper">
     <div class="preview-placeholder" id="preview-placeholder">
@@ -31,25 +34,76 @@
   <script>
     const placeholder = document.getElementById('preview-placeholder');
     const frame = document.getElementById('preview-iframe');
+    const message = document.querySelector('.preview-message');
+    let loadTimeout;
 
-    const hidePlaceholder = () => placeholder.classList.add('hidden');
+    const hidePlaceholder = () => {
+      clearTimeout(loadTimeout);
+      placeholder.classList.add('hidden');
+      if (message) {
+        message.textContent = 'Catable Web Preview';
+      }
+    };
+
     const showMissingBuild = () => {
+      clearTimeout(loadTimeout);
       placeholder.classList.remove('hidden');
       placeholder.innerHTML = `
         <div>
           <p class="label">Preview unavailable</p>
           <h2>Web build not found</h2>
-          <p class="muted">The web preview is not yet built. Run <code>npx expo export:web</code> and upload the output to <code>/web-build</code>.</p>
+          <p class="muted">The web preview is not yet built. Run <code>npx expo export --platform web</code> and upload the output to <code>/web-build</code>.</p>
         </div>
       `;
+      if (message) {
+        message.textContent = 'Preview unavailable';
+      }
     };
 
-    frame.addEventListener('load', hidePlaceholder);
-    frame.addEventListener('error', showMissingBuild);
+    const showError = () => {
+      clearTimeout(loadTimeout);
+      placeholder.classList.remove('hidden');
+      placeholder.innerHTML = `
+        <div>
+          <p class="label">Error loading preview</p>
+          <h2>Failed to load web build</h2>
+          <p class="muted">There was an error loading the preview. Please check the browser console for details.</p>
+        </div>
+      `;
+      if (message) {
+        message.textContent = 'Error loading preview';
+      }
+    };
 
+    // Check if build exists first
     fetch('./web-build/index.html', { method: 'HEAD' })
       .then((response) => {
         if (!response.ok) throw new Error('missing build');
+        
+        // Set timeout to show error if iframe doesn't load
+        loadTimeout = setTimeout(() => {
+          if (!placeholder.classList.contains('hidden')) {
+            showError();
+          }
+        }, 10000); // 10 second timeout
+
+        // Listen for iframe load
+        frame.addEventListener('load', () => {
+          // Check if iframe actually loaded content (not an error page)
+          try {
+            const iframeDoc = frame.contentDocument || frame.contentWindow.document;
+            if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML.trim().length > 0) {
+              hidePlaceholder();
+            } else {
+              setTimeout(hidePlaceholder, 1000); // Give it a moment
+            }
+          } catch (e) {
+            // Cross-origin or other error, assume it loaded
+            hidePlaceholder();
+          }
+        });
+
+        frame.addEventListener('error', showError);
       })
       .catch(showMissingBuild);
   </script>
