@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catable Web Preview</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="preview-shell">
+  <header class="preview-header">
+    <h1>Catable</h1>
+    <p class="preview-message">Loading Catable Web Preview…</p>
+  </header>
+  <div class="preview-frame-wrapper">
+    <div class="preview-placeholder" id="preview-placeholder">
+      <div>
+        <p class="label">Web preview</p>
+        <h2>Preparing your experience</h2>
+        <p class="muted">If this takes a moment, the Expo web build may still be loading.</p>
+      </div>
+    </div>
+    <iframe
+      class="preview-iframe"
+      id="preview-iframe"
+      title="Catable web build"
+      src="./web-build/index.html"
+      allow="clipboard-read; clipboard-write"
+    ></iframe>
+  </div>
+
+  <script>
+    const placeholder = document.getElementById('preview-placeholder');
+    const frame = document.getElementById('preview-iframe');
+
+    const hidePlaceholder = () => placeholder.classList.add('hidden');
+    const showMissingBuild = () => {
+      placeholder.classList.remove('hidden');
+      placeholder.innerHTML = `
+        <div>
+          <p class="label">Preview unavailable</p>
+          <h2>Web build not found</h2>
+          <p class="muted">The web preview is not yet built. Run <code>npx expo export:web</code> and upload the output to <code>/web-build</code>.</p>
+        </div>
+      `;
+    };
+
+    frame.addEventListener('load', hidePlaceholder);
+    frame.addEventListener('error', showMissingBuild);
+
+    fetch('./web-build/index.html', { method: 'HEAD' })
+      .then((response) => {
+        if (!response.ok) throw new Error('missing build');
+      })
+      .catch(showMissingBuild);
+  </script>
+</body>
+</html>
