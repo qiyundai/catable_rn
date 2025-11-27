@@ -283,7 +283,8 @@ const OnboardingScreen: React.FC = () => {
       setCurrentCardIndex(skipTargetIndex);
     } else {
       // Complete onboarding if we've reached the end
-      setOnboardingComplete(true);
+      // Call handleComplete to properly save all data
+      handleComplete();
     }
   };
 
@@ -1594,7 +1595,7 @@ const styles = StyleSheet.create({
     right: SPACING.lg,
     height: 40,
     top: '50%',
-    marginTop: -4, // Adjust for label height (20px caption + 8px margin)
+    marginTop: 8, // Adjust for label height (20px caption + 8px margin)
     backgroundColor: COLORS.gray,
     borderRadius: 8,
     borderWidth: 1,
