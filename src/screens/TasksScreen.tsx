@@ -16,6 +16,13 @@ import CardDeck from '../components/CardDeck';
 import WheelPicker from '../components/WheelPicker';
 import { UserTask } from '../types';
 import { getTaskById, getTaskByOldId, TaskDefinition, TaskField } from '../constants/tasks';
+import TaskIcon, { 
+  PoopSolidIcon, 
+  PoopRunnyIcon, 
+  PoopPalletIcon,
+  PawLeftIcon,
+  PawRightIcon,
+} from '../components/TaskIcon';
 import TaskReminderService from '../services/TaskReminderService';
 
 const TasksScreen: React.FC = () => {
@@ -418,39 +425,105 @@ const TasksScreen: React.FC = () => {
         // For object types (like nail clipping paws)
         if (field.schema) {
           const objectValue = fieldValue || {};
+          const isPawsField = task.id === 'nail-clipping' && field.id === 'paws';
+          
+          // Helper to get the appropriate paw icon
+          const getPawIcon = (key: string, isSelected: boolean) => {
+            const iconSize = 32;
+            const isLeft = key.includes('Left');
+            const Icon = isLeft ? PawLeftIcon : PawRightIcon;
+            return <Icon width={iconSize} height={iconSize} />;
+          };
+          
           return (
             <View style={styles.objectInputContainer}>
               <Text style={styles.fieldLabel}>{field.label}</Text>
               {field.help && (
                 <Text style={styles.fieldHelp}>{field.help}</Text>
               )}
-              <View style={styles.objectFields}>
-                {Object.keys(field.schema).map((key) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={[
-                      styles.objectField,
-                      objectValue[key] && styles.objectFieldSelected
-                    ]}
-                    onPress={() => {
-                      updateTaskFieldValue(task.id, field.id, {
-                        ...objectValue,
-                        [key]: !objectValue[key],
-                      });
-                    }}
-                  >
-                    <Text style={[
-                      styles.objectFieldText,
-                      objectValue[key] && styles.objectFieldTextSelected
-                    ]}>
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                    </Text>
-                    {objectValue[key] && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {isPawsField ? (
+                // Special layout for nail clipping paws - 2x2 grid
+                <View style={styles.pawsGrid}>
+                  <View style={styles.pawsRow}>
+                    {['frontLeft', 'frontRight'].map((key) => (
+                      <TouchableOpacity
+                        key={key}
+                        style={[
+                          styles.pawButton,
+                          objectValue[key] && styles.pawButtonSelected
+                        ]}
+                        onPress={() => {
+                          updateTaskFieldValue(task.id, field.id, {
+                            ...objectValue,
+                            [key]: !objectValue[key],
+                          });
+                        }}
+                      >
+                        {getPawIcon(key, objectValue[key])}
+                        <Text style={[
+                          styles.pawLabel,
+                          objectValue[key] && styles.pawLabelSelected
+                        ]}>
+                          {key.includes('Left') ? 'Front L' : 'Front R'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={styles.pawsRow}>
+                    {['backLeft', 'backRight'].map((key) => (
+                      <TouchableOpacity
+                        key={key}
+                        style={[
+                          styles.pawButton,
+                          objectValue[key] && styles.pawButtonSelected
+                        ]}
+                        onPress={() => {
+                          updateTaskFieldValue(task.id, field.id, {
+                            ...objectValue,
+                            [key]: !objectValue[key],
+                          });
+                        }}
+                      >
+                        {getPawIcon(key, objectValue[key])}
+                        <Text style={[
+                          styles.pawLabel,
+                          objectValue[key] && styles.pawLabelSelected
+                        ]}>
+                          {key.includes('Left') ? 'Back L' : 'Back R'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.objectFields}>
+                  {Object.keys(field.schema).map((key) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={[
+                        styles.objectField,
+                        objectValue[key] && styles.objectFieldSelected
+                      ]}
+                      onPress={() => {
+                        updateTaskFieldValue(task.id, field.id, {
+                          ...objectValue,
+                          [key]: !objectValue[key],
+                        });
+                      }}
+                    >
+                      <Text style={[
+                        styles.objectFieldText,
+                        objectValue[key] && styles.objectFieldTextSelected
+                      ]}>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </Text>
+                      {objectValue[key] && (
+                        <Text style={styles.checkmark}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           );
         }
@@ -575,6 +648,31 @@ const TasksScreen: React.FC = () => {
     // Check if this is a simple boolean-only task
     const isSimpleBoolean = task.fields.length === 1 && task.fields[0].type === 'boolean';
     
+    // Calculate icon size (64% of card width)
+    const iconSize = Math.round(CARD_WIDTH * 0.5);
+    
+    // Special case: nail-clipping doesn't show hero icon
+    const showHeroIcon = task.id !== 'nail-clipping';
+    
+    // Render the hero icon section
+    const renderHeroIcon = () => {
+      if (!showHeroIcon) return null;
+      
+      // Special case: poop card shows all 3 poop icons inline
+      if (task.id === 'poop') {
+        const poopIconSize = Math.round(iconSize * 0.45);
+        return (
+          <View style={styles.poopIconsContainer}>
+            <PoopRunnyIcon width={poopIconSize} height={poopIconSize} />
+            <PoopSolidIcon width={poopIconSize} height={poopIconSize} />
+            <PoopPalletIcon width={poopIconSize} height={poopIconSize} />
+          </View>
+        );
+      }
+      
+      return <TaskIcon taskId={task.id} size={iconSize} />;
+    };
+    
     return (
       <View style={styles.cardContent}>
         {/* Go back button - only on top card and not on first card */}
@@ -600,12 +698,13 @@ const TasksScreen: React.FC = () => {
           </TouchableOpacity>
         )}
         
-        <View style={styles.cardIcon}>
-          <Text style={styles.cardIconText}>{task.icon || '📝'}</Text>
-        </View>
-        
-        {/* Use question as the title */}
+        {/* Title first */}
         <Text style={styles.cardTitle}>{question}</Text>
+        
+        {/* Hero icon (swapped to be after title) */}
+        <View style={styles.cardIcon}>
+          {renderHeroIcon()}
+        </View>
         
         {/* Render inputs for non-simple-boolean tasks */}
         {!isSimpleBoolean && renderTaskInputs(task)}
@@ -909,28 +1008,27 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cardContent: {
-    padding: SPACING.xl,
+    paddingTop: 56, // Extra space for go back and config buttons
+    paddingHorizontal: SPACING.xl,
     paddingBottom: SPACING.md,
     alignItems: 'center',
     width: '100%',
   },
   cardIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: SPACING.lg,
   },
-  cardIconText: {
-    fontSize: 40,
+  poopIconsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: SPACING.md,
   },
   cardTitle: {
     ...TYPOGRAPHY.h2,
     color: COLORS.text,
     textAlign: 'center',
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.xs,
     lineHeight: 28,
   },
   funFactContainer: {
@@ -1316,6 +1414,41 @@ const styles = StyleSheet.create({
   },
   objectFieldTextSelected: {
     color: COLORS.surface,
+    fontWeight: '600',
+  },
+  // Paws grid for nail clipping
+  pawsGrid: {
+    width: '100%',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  pawsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: SPACING.lg,
+  },
+  pawButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.md,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    minWidth: 90,
+  },
+  pawButtonSelected: {
+    backgroundColor: COLORS.primary + '15',
+    borderColor: COLORS.primary,
+  },
+  pawLabel: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+    fontWeight: '500',
+  },
+  pawLabelSelected: {
+    color: COLORS.primary,
     fontWeight: '600',
   },
   checkmark: {

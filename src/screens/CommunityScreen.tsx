@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
+import PaperPlaneIcon from '../assets/icons/paper-plane.svg';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
 import FloatingIsland from '../components/FloatingIsland';
 
@@ -212,11 +213,7 @@ const CommunityScreen: React.FC = () => {
                 onPress={handleSendMessage}
                 disabled={!message.trim()}
               >
-                <Ionicons
-                  name="paper-plane"
-                  size={20}
-                  color="#FFFFFF"
-                />
+                <PaperPlaneIcon width={24} height={24} />
               </TouchableOpacity>
             </Animated.View>
           </View>

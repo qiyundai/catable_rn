@@ -3,11 +3,52 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View, TouchableOpacity, StyleSheet, Text, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '../store';
 import { RootStackParamList, MainTabParamList } from '../types';
 import { initializeLanguage } from '../utils/i18n';
+
+// Navigation icons (SVG for native)
+import TasksScreenActiveSvg from '../assets/icons/tasks-screen-active.svg';
+import TasksScreenInactiveSvg from '../assets/icons/tasks-screen-inactive.svg';
+import PetsScreenActiveSvg from '../assets/icons/pets-screen-active.svg';
+import PetsScreenInactiveSvg from '../assets/icons/pets-screen-inactive.svg';
+import PaperPlaneIconSvg from '../assets/icons/paper-plane.svg';
+
+// PNG icons for web
+const WEB_NAV_ICONS = {
+  tasksActive: require('../assets/icons-png/tasks-screen-active.png'),
+  tasksInactive: require('../assets/icons-png/tasks-screen-inactive.png'),
+  petsActive: require('../assets/icons-png/pets-screen-active.png'),
+  petsInactive: require('../assets/icons-png/pets-screen-inactive.png'),
+};
+
+// Icon components - PNG on web, SVG on native
+const NavIcon: React.FC<{ 
+  activeSvg: React.FC<any>; 
+  inactiveSvg: React.FC<any>;
+  activePng: any;
+  inactivePng: any;
+  isActive: boolean; 
+  size: number;
+}> = ({ activeSvg: ActiveSvg, inactiveSvg: InactiveSvg, activePng, inactivePng, isActive, size }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <Image 
+        source={isActive ? activePng : inactivePng}
+        style={{ width: size, height: size }}
+        resizeMode="contain"
+      />
+    );
+  }
+  return isActive ? <ActiveSvg width={size} height={size} /> : <InactiveSvg width={size} height={size} />;
+};
+
+// Paper plane is a true vector SVG (no embedded images), so it works fine on web
+const FloatingIcon: React.FC<{ size: number }> = ({ size }) => (
+  <PaperPlaneIconSvg width={size} height={size} />
+);
 
 // Create context for active screen
 const ActiveScreenContext = createContext<{
@@ -45,10 +86,13 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
               navigation.navigate('Tasks');
             }}
           >
-            <Ionicons
-              name={activeScreen === 'Tasks' ? 'list' : 'list-outline'}
+            <NavIcon
+              activeSvg={TasksScreenActiveSvg}
+              inactiveSvg={TasksScreenInactiveSvg}
+              activePng={WEB_NAV_ICONS.tasksActive}
+              inactivePng={WEB_NAV_ICONS.tasksInactive}
+              isActive={activeScreen === 'Tasks'}
               size={24}
-              color={activeScreen === 'Tasks' ? '#FFFFFF' : '#18C07A'}
             />
             <Text style={[
               styles.tabLabel,
@@ -69,10 +113,13 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
               navigation.navigate('PetProfiles');
             }}
           >
-            <Ionicons
-              name={activeScreen === 'PetProfiles' ? 'paw' : 'paw-outline'}
+            <NavIcon
+              activeSvg={PetsScreenActiveSvg}
+              inactiveSvg={PetsScreenInactiveSvg}
+              activePng={WEB_NAV_ICONS.petsActive}
+              inactivePng={WEB_NAV_ICONS.petsInactive}
+              isActive={activeScreen === 'PetProfiles'}
               size={24}
-              color={activeScreen === 'PetProfiles' ? '#FFFFFF' : '#18C07A'}
             />
             <Text style={[
               styles.tabLabel,
@@ -90,11 +137,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
           style={styles.floatingButton}
           onPress={navigateToCommunity}
         >
-          <Ionicons
-            name="paper-plane"
-            size={24}
-            color="#FFFFFF"
-          />
+          <FloatingIcon size={24} />
         </TouchableOpacity>
       )}
     </View>
@@ -310,7 +353,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
     backgroundColor: 'transparent',
   },
   activeTabButton: {
@@ -318,8 +361,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
+    fontWeight: '700',
   },
   floatingButton: {
     position: 'absolute',

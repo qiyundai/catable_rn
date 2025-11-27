@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { COLORS, TYPOGRAPHY, SPACING, SHADOWS } from '../constants';
+import TaskIcon from './TaskIcon';
 
 interface Task {
   id: string;
@@ -47,7 +48,9 @@ const TagSelector: React.FC<TagSelectorProps> = ({
                   style={styles.taskTag}
                   onPress={() => onTaskToggle(task.id)}
                 >
-                  {task.icon && <Text style={styles.taskIcon}>{task.icon}</Text>}
+                  <View style={styles.taskIconContainer}>
+                    <TaskIcon taskId={task.id} size={14} />
+                  </View>
                   <Text style={styles.taskName}>{task.name}</Text>
                 </TouchableOpacity>
               ))}
@@ -70,7 +73,9 @@ const TagSelector: React.FC<TagSelectorProps> = ({
               style={styles.taskTag}
               onPress={() => onTaskToggle(task.id)}
             >
-              {task.icon && <Text style={styles.taskIcon}>{task.icon}</Text>}
+              <View style={styles.taskIconContainer}>
+                <TaskIcon taskId={task.id} size={14} />
+              </View>
               <Text style={styles.taskName}>{task.name}</Text>
             </TouchableOpacity>
           ))}
@@ -147,8 +152,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     ...SHADOWS.small,
   },
-  taskIcon: {
-    fontSize: 14,
+  taskIconContainer: {
     marginRight: SPACING.xs,
   },
   taskName: {

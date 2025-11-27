@@ -57,11 +57,8 @@ const CardDeck: React.FC<CardDeckProps> = ({
   // Use a responsive percentage based on screen height - smaller screens get less height
   const availableHeight = screenHeight - tabBarHeight - buttonOverlap - bottomPadding;
   // Use a percentage of available height, with a minimum to ensure usability
-  // Smaller screens (like iPhone 13 Pro) will get a smaller percentage
-  console.log('screenHeight', screenHeight);
-  const heightPercentage = 0.55;
-  const calculatedHeight = availableHeight * heightPercentage;
-  const effectiveCardHeight = Math.max(300, Math.min(calculatedHeight, 650));
+  const calculatedHeight = availableHeight - 320;
+  const effectiveCardHeight = Math.max(320, Math.min(calculatedHeight, 650));
   
 
   const handlePrimaryAction = () => {
