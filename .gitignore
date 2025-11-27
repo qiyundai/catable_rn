@@ -2,11 +2,13 @@
 
 # dependencies
 node_modules/
+# but allow web-build assets that come from node_modules
+!web-build/assets/node_modules/
 
 # Expo
 .expo/
 dist/
-web-build/
+
 expo-env.d.ts
 
 # Native

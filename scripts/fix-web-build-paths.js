@@ -1,7 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const webBuildDir = path.join(__dirname, '..', 'web-build');
+// Use dist folder (where expo export outputs) or web-build if dist doesn't exist
+const distDir = path.join(__dirname, '..', 'dist');
+const webBuildDirFallback = path.join(__dirname, '..', 'web-build');
+const webBuildDir = fs.existsSync(distDir) ? distDir : webBuildDirFallback;
 
 // Find all JavaScript files in the web-build directory
 function findJSFiles(dir) {
