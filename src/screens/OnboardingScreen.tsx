@@ -39,7 +39,6 @@ const OnboardingScreen: React.FC = () => {
   
   // Responsive card dimensions
   const CARD_WIDTH = Math.min(screenWidth * 0.9, 400);
-  const CARD_HEIGHT = Math.min(screenHeight * 0.65, 600);
   
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [petForms, setPetForms] = useState<PetForm[]>([{
@@ -1008,7 +1007,6 @@ const OnboardingScreen: React.FC = () => {
             onComplete={handleComplete}
             renderCard={renderCardForDeck}
             cardWidth={CARD_WIDTH}
-            cardHeight={CARD_HEIGHT}
             maxVisibleCards={3}
             primaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
@@ -1596,7 +1594,7 @@ const styles = StyleSheet.create({
     right: SPACING.lg,
     height: 40,
     top: '50%',
-    marginTop: 8, // Adjust for label height (20px caption + 8px margin)
+    marginTop: -4, // Adjust for label height (20px caption + 8px margin)
     backgroundColor: COLORS.gray,
     borderRadius: 8,
     borderWidth: 1,

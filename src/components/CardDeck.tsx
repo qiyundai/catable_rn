@@ -36,7 +36,6 @@ const CardDeck: React.FC<CardDeckProps> = ({
   onComplete,
   renderCard,
   cardWidth,
-  cardHeight,
   maxVisibleCards = 3,
   primaryButtonText = 'Yes',
   secondaryButtonText = 'Skip',
@@ -59,9 +58,11 @@ const CardDeck: React.FC<CardDeckProps> = ({
   const availableHeight = screenHeight - tabBarHeight - buttonOverlap - bottomPadding;
   // Use a percentage of available height, with a minimum to ensure usability
   // Smaller screens (like iPhone 13 Pro) will get a smaller percentage
-  const heightPercentage = screenHeight < 900 ? 0.5 : 0.55; // 50% for smaller screens, 55% for larger
+  console.log('screenHeight', screenHeight);
+  const heightPercentage = 0.55;
   const calculatedHeight = availableHeight * heightPercentage;
-  const effectiveCardHeight = cardHeight || Math.max(350, Math.min(calculatedHeight, 650));
+  const effectiveCardHeight = Math.max(300, Math.min(calculatedHeight, 650));
+  
 
   const handlePrimaryAction = () => {
     if (primaryButtonDisabled) return;
