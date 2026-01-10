@@ -182,7 +182,7 @@ const OnboardingScreen: React.FC = () => {
             description: `Add a name and photo for your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
             component: 'CatName',
             type: 'data_collection',
-            skipBehavior: 'next',
+            skipBehavior: 'skip_to_next_flow_control',
             catIndex: i,
           },
           {
@@ -191,7 +191,7 @@ const OnboardingScreen: React.FC = () => {
             description: `Tell us about your ${i === 1 ? 'second' : `${i + 1}th`} cat`,
             component: 'CatInfo',
             type: 'data_collection',
-            skipBehavior: 'next',
+            skipBehavior: 'skip_to_next_flow_control',
             catIndex: i,
           }
         );
@@ -205,16 +205,8 @@ const OnboardingScreen: React.FC = () => {
         ...baseSteps.slice(addAnotherIndex)
       ];
       
-      // If no cat was created, filter out task selection steps
-      if (!hasAnyCat) {
-        baseSteps = baseSteps.filter(step => 
-          step.id !== 'logging_goals' && 
-          step.id !== 'daily_tasks' && 
-          step.id !== 'weekly_tasks' && 
-          step.id !== 'monthly_tasks' &&
-          step.id !== 'reminder_time'
-        );
-      }
+      // For initial onboarding, always show all steps (don't filter based on hasAnyCat)
+      // This prevents the progress bar from jumping when user starts typing a name
     }
 
     return baseSteps;
@@ -587,6 +579,20 @@ const OnboardingScreen: React.FC = () => {
     // The dynamic steps will be regenerated automatically
   };
 
+  // Remove incomplete pet forms (those without names) except the first one
+  const cleanupIncompletePetForms = () => {
+    setPetForms(prev => {
+      // Always keep at least the first pet form
+      const cleaned = prev.filter((form, index) => index === 0 || (form.name && form.name.trim().length > 0));
+      return cleaned.length > 0 ? cleaned : [prev[0]];
+    });
+    setCatPhotos(prev => {
+      // Keep photos for valid cats + first one
+      const validCount = petForms.filter((form, index) => index === 0 || (form.name && form.name.trim().length > 0)).length;
+      return prev.slice(0, Math.max(1, validCount));
+    });
+  };
+
 
   const getCurrentPetForm = () => {
     const currentStep = allSteps[currentCardIndex];
@@ -709,119 +715,6 @@ const OnboardingScreen: React.FC = () => {
             <Text style={styles.cardTitle}>{step.title}</Text>
             <Text style={styles.cardDescription}>{step.description}</Text>
           </View>
-        );
-
-      case 'cat_name':
-      case 'cat_name_1':
-      case 'cat_name_2':
-      case 'cat_name_3':
-        return (
-          <ScrollView 
-            style={styles.cardContentScroll}
-            contentContainerStyle={styles.cardContent}
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
-          >
-            <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>📝</Text>
-            </View>
-            <Text style={styles.cardTitle}>{step.title}</Text>
-            <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>{t('onboarding.catNameLabel')}</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder={t('onboarding.enterCatName')}
-                placeholderTextColor={COLORS.textSecondary}
-                value={currentPetForm.name}
-                onChangeText={(text) => updateCurrentPetForm({ name: text })}
-                autoFocus={false}
-              />
-            </View>
-            <TouchableOpacity style={styles.avatarPlaceholder} onPress={pickImage}>
-              {currentCatPhoto ? (
-                <Image source={{ uri: currentCatPhoto }} style={styles.avatarImage} />
-              ) : (
-                <>
-                  <Text style={styles.avatarEmoji}>📷</Text>
-                  <Text style={styles.avatarText}>{t('onboarding.addPhoto')}</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        );
-
-      case 'cat_info':
-      case 'cat_info_1':
-      case 'cat_info_2':
-      case 'cat_info_3':
-        return (
-          <ScrollView 
-            style={styles.cardContentScroll}
-            contentContainerStyle={styles.cardContent}
-            showsVerticalScrollIndicator={true}
-            nestedScrollEnabled={true}
-          >
-            <View style={styles.cardIcon}>
-              <Text style={styles.cardIconText}>ℹ️</Text>
-            </View>
-            <Text style={styles.cardTitle}>{step.title}</Text>
-            <Text style={styles.cardDescription}>{step.description}</Text>
-            <View style={styles.infoColumn}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('onboarding.age')}</Text>
-                <TouchableOpacity
-                  style={styles.inputField}
-                  onPress={openAgePicker}
-                >
-                  <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{formatAge(ageMonths)}</Text>
-                    <Text style={styles.inputIcon}>⌄</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('onboarding.gender')}</Text>
-                <TouchableOpacity
-                  style={styles.inputField}
-                  onPress={openGenderPicker}
-                >
-                  <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.gender.charAt(0).toUpperCase() + currentPetForm.gender.slice(1)}</Text>
-                    <Text style={styles.inputIcon}>⌄</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('onboarding.breed')}</Text>
-                <TouchableOpacity
-                  style={styles.inputField}
-                  onPress={openBreedPicker}
-                >
-                  <View style={styles.inputValueContainer}>
-                    <Text style={styles.inputValue}>{currentPetForm.breed || t('onboarding.selectBreed')}</Text>
-                    <Text style={styles.inputIcon}>⌄</Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('onboarding.personality')}</Text>
-                <TextInput
-                  style={[styles.inputField, styles.textAreaInput]}
-                  placeholder={t('onboarding.describePersonality')}
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={currentPetForm.personality}
-                  onChangeText={(text) => updateCurrentPetForm({ personality: text })}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
-            </View>
-          </ScrollView>
         );
 
       case 'add_another':
@@ -948,6 +841,118 @@ const OnboardingScreen: React.FC = () => {
         );
 
       default:
+        // Handle dynamic cat_name steps (cat_name, cat_name_1, cat_name_2, etc.)
+        if (step.id === 'cat_name' || step.id.startsWith('cat_name_')) {
+          return (
+            <ScrollView 
+              style={styles.cardContentScroll}
+              contentContainerStyle={styles.cardContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              <View style={styles.cardIcon}>
+                <Text style={styles.cardIconText}>📝</Text>
+              </View>
+              <Text style={styles.cardTitle}>{step.title}</Text>
+              <Text style={styles.cardDescription}>{step.description}</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>{t('onboarding.catNameLabel')}</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder={t('onboarding.enterCatName')}
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={currentPetForm.name}
+                  onChangeText={(text) => updateCurrentPetForm({ name: text })}
+                  autoFocus={false}
+                />
+              </View>
+              <TouchableOpacity style={styles.avatarPlaceholder} onPress={pickImage}>
+                {currentCatPhoto ? (
+                  <Image source={{ uri: currentCatPhoto }} style={styles.avatarImage} />
+                ) : (
+                  <>
+                    <Text style={styles.avatarEmoji}>📷</Text>
+                    <Text style={styles.avatarText}>{t('onboarding.addPhoto')}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          );
+        }
+
+        // Handle dynamic cat_info steps (cat_info, cat_info_1, cat_info_2, etc.)
+        if (step.id === 'cat_info' || step.id.startsWith('cat_info_')) {
+          return (
+            <ScrollView 
+              style={styles.cardContentScroll}
+              contentContainerStyle={styles.cardContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              <View style={styles.cardIcon}>
+                <Text style={styles.cardIconText}>ℹ️</Text>
+              </View>
+              <Text style={styles.cardTitle}>{step.title}</Text>
+              <Text style={styles.cardDescription}>{step.description}</Text>
+              <View style={styles.infoColumn}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('onboarding.age')}</Text>
+                  <TouchableOpacity
+                    style={styles.inputField}
+                    onPress={openAgePicker}
+                  >
+                    <View style={styles.inputValueContainer}>
+                      <Text style={styles.inputValue}>{formatAge(ageMonths)}</Text>
+                      <Text style={styles.inputIcon}>⌄</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('onboarding.gender')}</Text>
+                  <TouchableOpacity
+                    style={styles.inputField}
+                    onPress={openGenderPicker}
+                  >
+                    <View style={styles.inputValueContainer}>
+                      <Text style={styles.inputValue}>{currentPetForm.gender.charAt(0).toUpperCase() + currentPetForm.gender.slice(1)}</Text>
+                      <Text style={styles.inputIcon}>⌄</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('onboarding.breed')}</Text>
+                  <TouchableOpacity
+                    style={styles.inputField}
+                    onPress={openBreedPicker}
+                  >
+                    <View style={styles.inputValueContainer}>
+                      <Text style={styles.inputValue}>{currentPetForm.breed || t('onboarding.selectBreed')}</Text>
+                      <Text style={styles.inputIcon}>⌄</Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>{t('onboarding.personality')}</Text>
+                  <TextInput
+                    style={[styles.inputField, styles.textAreaInput]}
+                    placeholder={t('onboarding.describePersonality')}
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={currentPetForm.personality}
+                    onChangeText={(text) => updateCurrentPetForm({ personality: text })}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                </View>
+              </View>
+            </ScrollView>
+          );
+        }
+
+        // Unknown step - return null
         return null;
     }
   };
@@ -1009,9 +1014,17 @@ const OnboardingScreen: React.FC = () => {
             renderCard={renderCardForDeck}
             cardWidth={CARD_WIDTH}
             maxVisibleCards={3}
+            primaryButtonDisabled={
+              // Disable Next button on cat_name steps if name is empty
+              (allSteps[currentCardIndex]?.id === 'cat_name' || 
+               allSteps[currentCardIndex]?.id?.startsWith('cat_name_')) &&
+              !getCurrentPetForm().name?.trim()
+            }
             primaryButtonText={
               allSteps[currentCardIndex]?.id === 'add_another'
-                ? t('onboarding.yesAdd')
+                ? hasAnyCat 
+                  ? t('onboarding.yesAdd')
+                  : t('onboarding.goBack')
                 : currentCardIndex === allSteps.length - 1
                 ? t('onboarding.complete')
                 : t('common.next')
@@ -1021,10 +1034,22 @@ const OnboardingScreen: React.FC = () => {
                 ? hasAnyCat ? t('onboarding.noContinue') : t('onboarding.goBack')
                 : t('common.skip')
             }
+            hideSecondaryButton={
+              // Hide secondary button at add_another when no cats exist (only show "Go Back")
+              allSteps[currentCardIndex]?.id === 'add_another' && !hasAnyCat
+            }
             onPrimaryAction={(item, index) => {
               if (item.id === 'add_another') {
-                addAnotherCat();
-                handleNext();
+                if (hasAnyCat) {
+                  // Add another cat - the allSteps array will regenerate with new cat steps
+                  addAnotherCat();
+                } else {
+                  // No cats yet - go back to cat_name to add the first cat
+                  const catNameIndex = allSteps.findIndex(step => step.id === 'cat_name');
+                  if (catNameIndex !== -1) {
+                    setCurrentCardIndex(catNameIndex);
+                  }
+                }
               } else {
                 // Default behavior for other steps
                 if (index < allSteps.length - 1) {
@@ -1053,6 +1078,15 @@ const OnboardingScreen: React.FC = () => {
                   if (firstCatNameIndex !== -1) {
                     setCurrentCardIndex(firstCatNameIndex);
                   }
+                }
+              } else if (stepId?.startsWith('cat_name_') || stepId?.startsWith('cat_info_')) {
+                // Skipping dynamic cat steps - clean up incomplete entries and go to add_another
+                cleanupIncompletePetForms();
+                const addAnotherIndex = allSteps.findIndex(step => step.id === 'add_another');
+                if (addAnotherIndex !== -1) {
+                  setCurrentCardIndex(addAnotherIndex);
+                } else {
+                  handleSkip();
                 }
               } else {
                 // Default behavior for other steps

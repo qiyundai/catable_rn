@@ -342,7 +342,7 @@ export const ONBOARDING_STEPS = [
     description: 'Add a name and photo for your cat',
     component: 'CatName',
     type: 'data_collection',
-    skipBehavior: 'next',
+    skipBehavior: 'skip_to_next_flow_control',
   },
   {
     id: 'cat_info',
@@ -350,7 +350,7 @@ export const ONBOARDING_STEPS = [
     description: 'Tell us about your cat',
     component: 'CatInfo',
     type: 'data_collection',
-    skipBehavior: 'next',
+    skipBehavior: 'skip_to_next_flow_control',
   },
   {
     id: 'add_another',

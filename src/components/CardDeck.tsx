@@ -24,6 +24,8 @@ interface CardDeckProps {
   primaryButtonText?: string;
   secondaryButtonText?: string;
   primaryButtonDisabled?: boolean;
+  secondaryButtonDisabled?: boolean;
+  hideSecondaryButton?: boolean;
   onPrimaryAction?: (item: any, index: number) => void;
   onSecondaryAction?: (item: any, index: number) => void;
 }
@@ -40,6 +42,8 @@ const CardDeck: React.FC<CardDeckProps> = ({
   primaryButtonText = 'Yes',
   secondaryButtonText = 'Skip',
   primaryButtonDisabled = false,
+  secondaryButtonDisabled = false,
+  hideSecondaryButton = false,
   onPrimaryAction,
   onSecondaryAction,
 }) => {
@@ -76,6 +80,7 @@ const CardDeck: React.FC<CardDeckProps> = ({
   };
 
   const handleSecondaryAction = () => {
+    if (secondaryButtonDisabled) return;
     const currentItem = items[currentIndex];
     if (onSecondaryAction) {
       onSecondaryAction(currentItem, currentIndex);
@@ -155,17 +160,30 @@ const CardDeck: React.FC<CardDeckProps> = ({
           </View>
           {/* Buttons OUTSIDE the clipping container - positioned relative to cardWrapper */}
           <View style={[styles.buttonContainer, { width: effectiveCardWidth }]}>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleSecondaryAction}
-            >
-              <Text style={styles.secondaryButtonText}>{secondaryButtonText}</Text>
-            </TouchableOpacity>
+            {!hideSecondaryButton && (
+              <TouchableOpacity
+                style={[
+                  styles.button, 
+                  styles.secondaryButton,
+                  secondaryButtonDisabled && styles.secondaryButtonDisabled
+                ]}
+                onPress={handleSecondaryAction}
+                disabled={secondaryButtonDisabled}
+              >
+                <Text style={[
+                  styles.secondaryButtonText,
+                  secondaryButtonDisabled && styles.secondaryButtonTextDisabled
+                ]}>
+                  {secondaryButtonText}
+                </Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
               style={[
                 styles.button, 
                 styles.primaryButton,
-                primaryButtonDisabled && styles.primaryButtonDisabled
+                primaryButtonDisabled && styles.primaryButtonDisabled,
+                hideSecondaryButton && styles.singleButton
               ]}
               onPress={handlePrimaryAction}
               disabled={primaryButtonDisabled}
@@ -341,6 +359,16 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     ...TYPOGRAPHY.bodyBold,
     color: COLORS.primary,
+  },
+  secondaryButtonDisabled: {
+    borderColor: COLORS.border,
+    opacity: 0.5,
+  },
+  secondaryButtonTextDisabled: {
+    color: COLORS.textSecondary,
+  },
+  singleButton: {
+    maxWidth: 200,
   },
   completionPlaceholder: {
     flex: 1,
